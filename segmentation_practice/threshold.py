@@ -5,12 +5,10 @@
 from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
 
-image = plt.imread('1.jpeg')
+image = plt.imread('pepper.ppm')
 gray_img = rgb2gray(image)
 
 gray_r = gray_img.reshape(gray_img.shape[0]*gray_img.shape[1])
-mean = gray_r.mean()
-print(mean)
 thresholds = int(input("Enter the number of thresholds:\n"))
 
 for i in range(gray_r.shape[0]):

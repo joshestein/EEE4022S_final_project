@@ -2,7 +2,7 @@ from skimage.color import rgb2gray
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
-image = plt.imread('1.jpeg')/255
+image = plt.imread('pepper.ppm')/255
 image_reshape = image.reshape(image.shape[0]*image.shape[1], image.shape[2])
 clusters = int(input("Enter number of clusters:\n"))
 
