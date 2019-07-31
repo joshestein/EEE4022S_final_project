@@ -10,7 +10,16 @@
 using namespace cv;
 using namespace cv::ximgproc::segmentation;
 
+void help() {
+    std::cout << std::endl <<
+    "Selective search: " << std::endl <<
+    "./selective_search input_image (s|[f]|q)" << std::endl;
+}
+
 int main(int argc, char** argv) {
+    if (argc < 2) {
+        help();
+    }
     Mat img = imread(argv[1], 0);
     if (!img.data) {
         std::cerr << "Failed to load input image" << std::endl;
