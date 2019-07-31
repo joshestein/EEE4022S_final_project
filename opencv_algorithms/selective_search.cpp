@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
 
     char c = (char)waitKey();
     while (c != 'q') {
+        // required for updating rects
         Mat clone_img = img.clone();
         int i = 0;
 

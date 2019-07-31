@@ -1,13 +1,23 @@
 CC=g++ -std=c++11
 IMAGE=/home/josh/Documents/UCT/Thesis/Datasets/robotcar-dataset/stereo/centre/1418381799701502.png 
+SOURCES=selective_search.cpp graph.cpp
+OBJECTS=$(SOURCES:.cpp=.o)
+EXECS=$(SOURCES:.cpp=)
+FLAGS=`pkg-config --libs --cflags opencv`
 
-all: clean build run
+all: $(OBJECTS) $(EXECS) run_graph
 
 clean:
-	rm -rf selective_search
+	rm -rf $(OBJECTS) $(EXECS) 
 
-build:
-	$(CC) selective_search.cpp `pkg-config --libs --cflags opencv` -o selective_search
+$(OBJECTS): %.o: %.cpp
+	$(CC) -c $< $(FLAGS) -o $@
 
-run:
-	./selective_search $(IMAGE) q
+$(EXECS): %: %.o 
+	$(CC) $< $(FLAGS) -o $@
+
+run_ss:
+	./selective_search $(IMAGE) f
+
+run_graph:
+	./graph $(IMAGE) 0.5 100
