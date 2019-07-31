@@ -10,5 +10,4 @@ build:
 	$(CC) selective_search.cpp `pkg-config --libs --cflags opencv` -o selective_search
 
 run:
-	./selective_search $(IMAGE)
-
+	./selective_search $(IMAGE) q

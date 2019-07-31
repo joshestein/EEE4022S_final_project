@@ -3,7 +3,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include <opencv2/ximgproc/segmentation.hpp>
+#include "opencv2/ximgproc/segmentation.hpp"
 #include <iostream>
 #include <ctime>
 
@@ -12,6 +12,10 @@ using namespace cv::ximgproc::segmentation;
 
 int main(int argc, char** argv) {
     Mat img = imread(argv[1], 0);
+    if (!img.data) {
+        std::cerr << "Failed to load input image" << std::endl;
+        return -3;
+    }
     cvtColor(img, img, COLOR_BayerGR2BGR);
 
     // resize image
@@ -21,7 +25,26 @@ int main(int argc, char** argv) {
 
     Ptr<SelectiveSearchSegmentation> ss = createSelectiveSearchSegmentation();
     ss->setBaseImage(img);
-    ss->switchToSelectiveSearchFast();
+
+    /*
+     * Sets quality - defaults to fast
+     * (C)olour, (T)exture, (S)ize, (F)ill
+     * Single: HSV - C+T+S+F
+     * Fast:   HSV - C+T+S+F, 
+     *         Lab - T+S+F
+     * Quality: HSV - C+T+S+F,
+     *          Lab - T+S+F,
+     *          rgI (RGB + intensity) - F,
+     *          Intensity (Grayscale)   - S 
+     * See original paper for more details.
+     */
+    if (argv[2][0] == 's') {
+        ss->switchToSingleStrategy();
+    } else if (argv[2][0] == 'q') {
+        ss->switchToSelectiveSearchQuality();
+    } else {
+        ss->switchToSelectiveSearchFast();
+    }
 
     std::vector<Rect> rects;
     ss->process(rects);
