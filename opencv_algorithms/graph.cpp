@@ -23,7 +23,6 @@ void help() {
 
 Scalar hsv_to_rgb(Scalar &&c) {
     Mat in(1, 1, CV_32FC3); // 32 bit float with 3 channels
-    Mat out(1, 1, CV_32FC3);
 
     float *p = in.ptr<float>(0);
 
@@ -31,16 +30,22 @@ Scalar hsv_to_rgb(Scalar &&c) {
     p[1] = (float)c[1];
     p[2] = (float)c[2];
 
-    cvtColor(in, out, COLOR_HSV2RGB);
+    cvtColor(in, in, COLOR_HSV2RGB);
 
-    Scalar t;
-    // Vec3f = Vector<float, 3>
-    Vec3f p2 = out.at<Vec3f>(0, 0);
-    t[0] = (int)(p2[0] * 255);
-    t[1] = (int)(p2[1] * 255);
-    t[2] = (int)(p2[2] * 255);
+    p[0] *= 255;
+    p[1] *= 255;
+    p[2] *= 255;
+
+    return Scalar(p[0], p[1], p[2]);
+
+    // Scalar t;
+    // // Vec3f = Vector<float, 3>
+    // Vec3f p2 = in.at<Vec3f>(0, 0);
+    // t[0] = (int)(p2[0] * 255);
+    // t[1] = (int)(p2[1] * 255);
+    // t[2] = (int)(p2[2] * 255);
     
-    return t;
+    // return t;
 }
 
 Scalar color_mapping(uint &segment_id) {
