@@ -1,11 +1,11 @@
 CC=g++ -std=c++11
-IMAGE=/home/josh/Documents/UCT/Thesis/Datasets/robotcar-dataset/stereo/centre/1418381799701502.png 
-SOURCES=selective_search.cpp graph.cpp
+IMAGE=/home/josh/Documents/UCT/Thesis/Datasets/2014-05-14-13-53-47/stereo/centre/1400075815389497.png 
+SOURCES=selective_search.cpp graph.cpp superpixels.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECS=$(SOURCES:.cpp=)
 FLAGS=`pkg-config --libs --cflags opencv`
 
-all: $(OBJECTS) $(EXECS) run_graph
+all: $(OBJECTS) $(EXECS) 
 
 clean:
 	rm -rf $(OBJECTS) $(EXECS) 
@@ -21,3 +21,6 @@ run_ss:
 
 run_graph:
 	./graph $(IMAGE) 0.5 100
+
+run_superpixels:
+	./superpixels $(IMAGE) 0
