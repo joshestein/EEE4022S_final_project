@@ -13,21 +13,30 @@ using namespace cv::ximgproc::segmentation;
 void help() {
     std::cout << std::endl <<
     "Selective search: " << std::endl <<
-    "./selective_search input_image (s|[f]|q)" << std::endl;
+    "The final true[1]/false[0] value represents whether the input image is Bayer encoded." << std::endl <<
+    "./selective_search input_image (s|[f]|q) true[1]/false[0]" << std::endl;
 }
 
 void draw_rects(Mat &img, const int &num_rects, std::vector<Rect> &rects);
 
 int main(int argc, char** argv) {
+    Mat img;
     if (argc < 2) {
         help();
     }
-    Mat img = imread(argv[1], 0);
+
+    if (std::stoi(argv[3]) == 1) {
+        // Bayer
+        img = imread(argv[1], 0);
+        cvtColor(img, img, COLOR_BayerGR2BGR);
+    } else {
+        img = imread(argv[1]);
+    }
+    
     if (!img.data) {
         std::cerr << "Failed to load input image" << std::endl;
         return -3;
     }
-    cvtColor(img, img, COLOR_BayerGR2BGR);
 
     // resize image
     int height = 500;

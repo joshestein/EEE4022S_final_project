@@ -9,13 +9,15 @@ INS_FILE = [DATA '/gps/ins.csv'];
 EXTRINSIC_DIR = [SDK_DIR '/extrinsics/'];
 MODELS_DIR = [SDK_DIR '/models/'];
 
-sample_start_timestamp = 1418381799701502;
-sample_end_timestamp = 1418381799826501;
+% sample_start_timestamp = 1418381799701502;
+% sample_end_timestamp = 1418381799826501;
 
 start_timestamp = 1400075815389497;
+% 5 frames later...
+% start_timestamp = 1400075815701972;
 
 % img = LoadImage(IMAGE_DIR, start_timestamp);
 % imshow(img);
-% BuildPointcloud(LIDAR_DIR, INS_FILE, EXTRINSIC_DIR, start_timestamp, end_timestamp);
+% BuildPointcloud(LIDAR_DIR, INS_FILE, EXTRINSIC_DIR, sample_start_timestamp, sample_end_timestamp);
 
 ProjectLaserIntoCamera(IMAGE_DIR, LIDAR_DIR, INS_FILE, MODELS_DIR, EXTRINSIC_DIR, start_timestamp);
