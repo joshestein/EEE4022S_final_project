@@ -1,34 +1,33 @@
 SDK_DIR = '../../Datasets/robotcar-dataset-sdk-2.1.1';
 path(path, [SDK_DIR '/matlab/'])
 
-image_points_w_colour = 'image_points.jpg';
+image_points_colour = 'image_points.jpg';
+longer_image_points_colour = 'image_points_2.jpg';
 image_points_white = 'white_image_points.jpg';
+longer_image_points_white = 'white_image_points_2.jpg';
+longest_image_points_white = 'white_image_points_3.jpg';
+
 orig_img = 1400075815389497;
 
 % Parameters
 % block size = nxn block used to search for pixels
 % threshold = number of pixels per nxn block before drawing a rec
+% 140 good for longest
 block_size = 16;
-threshold = 90;
+threshold = 140;
 % % % % % % % % %
 
-img = imread('white_image_points.jpg');
+img = imread(longest_image_points_white);
 orig_img = LoadImage('../../Datasets/2014-05-14-13-53-47/stereo/centre/', orig_img);
+lab_img = rgb2lab(orig_img);
 % orig_img = imread('original_image.jpg');
+% imshow(lab_img(:,:,1),[0 100]);
+imshow(orig_img);
 
-
-[rows, cols, channels] = size(orig_img);
-% imshow(orig_img);
+[rows, cols, channels] = size(img);
 hold on;
 axis on;
-
-% ax.YDir = 'normal';
-% for row = 1:block_size:rows
-%     line([1, cols], [row, row], 'Color', 'r');
-% end
-% for col = 1:block_size:cols
-%     line([col, col], [1, row], 'Color', 'b');
-% end
+grid on;
 
 % rect_axes = axes('Position', [0 1280 0 960]);
 % set(rect_axes, 'YDir', 'reverse');
@@ -46,16 +45,17 @@ axis on;
 % end
 
 block_starts = [];
-% mask = false(size(orig_img, 1), size(orig_img, 2));
-grab_mask = false(size(orig_img, 1), size(orig_img, 2));
-roi = grab_mask;
-roi(10:end-10,10:end-10,:) = true;
+mask = false(size(orig_img, 1), size(orig_img, 2));
+% grab_mask = false(size(orig_img, 1), size(orig_img, 2));
+% roi = grab_mask;
+% roi(10:end-10,10:end-10,:) = true;
 
-L = superpixels(orig_img, 500);
+% L = superpixels(orig_img, 500);
 
 for col = 1:block_size:cols
     % reset mask for grabcut
-    mask = false(size(orig_img, 1), size(orig_img, 2));
+    % mask = false(size(orig_img, 1), size(orig_img, 2));
+    % 
     % col + block_size = 1 + block points
     % so we need to subtract one to ensure we are only searching for exactly block number of points.
     % e.g block size = 16
@@ -82,12 +82,12 @@ for col = 1:block_size:cols
             % 
             % threshold of 3*block_size is arbitrary
             if (~first_row && (first_row_pos - row) < 3*block_size) 
-                %rectangle('Position', [col start_row block_size block_size], 'EdgeColor', 'r');
+                % rectangle('Position', [col start_row block_size block_size], 'EdgeColor', 'r');
                 mask(start_row:row, col:col_end) = true;
-                fmask = mask;
-                bmask = ~mask;
-                BW = grabcut(orig_img, L, roi, mask, bmask);
-                grab_mask = grab_mask + BW;
+                % fmask = mask;
+                % bmask = ~mask;
+                % BW = grabcut(orig_img, L, roi, mask, bmask);
+                % grab_mask = grab_mask + BW;
                 block_starts = [block_starts ; col start_row];
             end
             first_row_pos = row;
@@ -96,13 +96,13 @@ for col = 1:block_size:cols
     end
 end
 
-imshow(grab_mask)
 
-grid on;
 % find countours starting from highest density lidar points
 % this guy is pretty slow
-% bw = activecontour(orig_img, mask, 200);
+% figure()
+bw = activecontour(orig_img, mask, 200);
 % imshow(orig_img);
+hold on;
 
 % generate labels for grabcut
 % L = superpixels(orig_img, 700);
@@ -121,7 +121,40 @@ grid on;
 % grab = grabcut(orig_img, L, mask);
 % imshow(grab);
 
-
 % draw original mask an detected contours
 % contour(mask, 1, 'g', 'LineWidth', 4);
 % contour(bw, 1, 'r', 'LineWidth', 4);
+
+% % find centroids
+% s = regionprops(bw, 'centroid');
+% % turn into matrix
+% centroids = cat(1, s.Centroid);
+% plot(centroids(:,1), centroids(:,2), 'g*');
+
+% display bounding boxes
+% rects = regionprops(bw, 'BoundingBox');
+% rects = cat(1, rects.BoundingBox);
+% for i = 1:size(rects, 1)
+%     rectangle('Position', [rects(i, 1) rects(i, 2) rects(i, 3) rects(i, 4)], 'EdgeColor', 'm');
+% end
+
+% Colour each major shape differently
+CC = bwconncomp(bw);
+numPixels = cellfun(@numel, CC.PixelIdxList);
+new_mask = false(size(orig_img, 1), size(orig_img, 2));
+for i = 1:CC.NumObjects
+    % reset new_mask
+    new_mask(:,:) = 0;
+    % only care about big regions
+    % 50 is good for medium length lasers (longer_xxx)
+    if (numPixels(i) < 50)
+        continue;
+    end
+    new_mask(CC.PixelIdxList{i}) = true;
+    contour(new_mask, 1, 'color', rand(1,3), 'Linewidth', 6);
+end
+
+% contour(mask, 1, 'g', 'LineWidth', 4);
+
+% grab = grabcut(orig_img, L, roi, bw, ~bw);
+% imshow(roi);
