@@ -1,7 +1,6 @@
 base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
-path(path, '../../Datasets/KITTI_devkit/matlab/');
 addpath(sdk_dir);
 
 cam       = 2; % 0-based index
@@ -60,6 +59,6 @@ figure();
 imshow(img); hold on; axis on; grid on;
 
 gradient_edges(img, velo_img, velo);
-missing_gaps(img, velo_img);
-% colour_difference;
+% missing_gaps(img, velo_img);
+% colour_difference(img, velo_img, velo);
  
