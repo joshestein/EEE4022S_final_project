@@ -12,7 +12,7 @@ function edge_positions = gradient_edges(img, velo_img, velo, opt_grad_thresh)
 % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 
 % faster way to compute gradients?
-% colours = round(64*5/velo(:,1));
+% colours = round(64*5./velo(:,1));
 % fx = gradient(colours);
 % if (abs(fx(i)) > grad_thresh)
 % doesn't seem to be working...
@@ -39,11 +39,6 @@ draw_mask = false;
 % find edges based on gradient changes in velodyne
 % make sure you are not thresholding for height when using
 for i = 2:size(velo_img, 1)
-  % ignore points outsize image
-  if outside_image(img, velo_img, i)
-    continue;
-  end
-
   old_x = round(64*5/velo(i-1,1));
   x = round(64*5/velo(i,1));
 
