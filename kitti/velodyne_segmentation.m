@@ -6,6 +6,7 @@ addpath(sdk_dir);
 
 cam       = 2; % 0-based index
 % frame = 392 for drive 93
+% frame = 329 for drive 09
 frame     = 329; % 0-based index
 
 % load calibration
@@ -58,7 +59,7 @@ velo_img_copy = project(velo_copy(:,1:3),P_velo_to_img);
 
 % remove all points outside of image
 i = 1;
-while (i < size(velo_img, 1))
+while (i <= size(velo_img, 1))
   if outside_image(img, velo_img, i)
     velo_img(i,:) = [];
     velo(i, :) = [];
@@ -73,6 +74,7 @@ col_idx = round(64*5./velo(:,1));
 mask = (zeros(size(img, 1), size(img, 2)));
 
 rgb_matrix = zeros(size(velo_img, 1), 3);
+ab_matrix = zeros(size(velo_img, 1), 2);
 rows = round(velo_img(:,2));
 cols = round(velo_img(:,1));
 
@@ -86,33 +88,56 @@ for i=1:size(velo_img,1)
   % plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
+  ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
+end
+
+% stores co-ordinates and rgb values of each pixel
+img_matrix = zeros(size(img, 1)*size(img, 2), 5);
+
+i = 1;
+for col = 1:size(img, 2)
+  for row = 1:size(img, 1)
+    % [row, col, img(row, col, 1:3)]?
+    % this is fucking dumb
+    % _everything_ needs to be 'double', because uint8 clips at 255
+    % I realized this and simply converted row and col
+    % but the colours also need to be converted
+    img_matrix(i, :) = [double(row), double(col), double(img(row, col, 1)), double(img(row, col, 2)), double(img(row, col, 3))];
+    i = i + 1;
+  end
 end
 
 % matrix to store variables for clustering based on Euclidean distance
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
 dist_matrix = [velo_img col_idx rgb_matrix];
+num_clusters = 10;
 
-Y = pdist(dist_matrix, 'Euclidean');
+Y = pdist(dist_matrix(:,3), 'Euclidean');
 Z = linkage(Y);
-T = cluster(Z, 'maxclust', 20);
+T = cluster(Z, 'maxclust', num_clusters);
 
-figure(); imshow(img); hold on;
-new_colours = ['r'; 'g'; 'b'; 'w'; 'k'; 'y'; 'm'; 'c'; 'r'; 'm'];
-for i = 1:10
-  cluster_id = find(T==i);
+% figure(); imshow(img); hold on;
+% for i = 1:num_clusters
+  % cluster_id = find(T==i);
+mask = zeros(size(img));
+cluster_id = find(T==10);
+clust_col = rand(1,3);
+cluster_matrix = zeros(numel(cluster_id), 5);
   for j = 1:numel(cluster_id)
     pos = cluster_id(j);
-    plot(dist_matrix(pos, 1), dist_matrix(pos, 2), 'x', 'color', new_colours(i));
+  cluster_matrix(j,:) = [dist_matrix(pos, 2), dist_matrix(pos, 1), dist_matrix(pos, 4), dist_matrix(pos, 5), dist_matrix(pos, 6)];
+  % plot(dist_matrix(pos, 1), dist_matrix(pos, 2), 'x', 'color', clust_col);
+  mask(rows(pos), cols(pos), 1:3) = 1;
+  % find min x co-ordinate
    end
+
+[Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
+
+for i = 1:numel(Idx)
+  row = img_matrix(Idx{i}, :);
+  plot(row(:, 2), row(:, 1), 'x', 'color', 'm');
 end
-
-fg_mask = (zeros(size(img)));
-bg_mask = (zeros(size(img)));
-
-% Active contour not working well
-% bw = activecontour(img, mask, 300);
-% contour(bw, 'Color', 'm');
 
 % figure();
 % imshow(img); hold on; axis on; grid on;
