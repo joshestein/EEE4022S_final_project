@@ -1,4 +1,4 @@
-function fg_points = missing_gaps(img, velo_img, opt_gap_thresh)
+function fg_points = missing_gaps(img, velo_img, velo, opt_gap_thresh)
     % lekker for frame 0
     % useful when not using height thresholding
 
