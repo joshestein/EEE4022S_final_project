@@ -1,5 +1,5 @@
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
-base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
+% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 addpath(sdk_dir);
@@ -7,7 +7,7 @@ addpath(sdk_dir);
 cam       = 2; % 0-based index
 % frame = 392 for drive 93
 % frame = 329 for drive 09
-frame     = 329; % 0-based index
+frame     = 241; % 0-based index
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -20,6 +20,7 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
+lab_img = rgb2lab(img);
 fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
 imshow(img); hold on;
 axis on; grid on;
@@ -71,7 +72,6 @@ end
 % plot points
 colours = jet;
 col_idx = round(64*5./velo(:,1));
-mask = (zeros(size(img, 1), size(img, 2)));
 
 rgb_matrix = zeros(size(velo_img, 1), 3);
 ab_matrix = zeros(size(velo_img, 1), 2);
@@ -110,40 +110,76 @@ end
 % matrix to store variables for clustering based on Euclidean distance
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
-dist_matrix = [velo_img col_idx rgb_matrix];
-num_clusters = 10;
+pointcloud_matrix = [velo_img col_idx rgb_matrix];
 
-Y = pdist(dist_matrix(:,3), 'Euclidean');
+% this could be made higher, i.e. over-cluster
+% and then merge similar clusters together
+% where similarity is based on depth, colour, position
+num_clusters = 6;
+ 
+% weights = [1; 1; 50; 0.5; 0.5; 0.5];
+weights = [1; 1; 100; 0; 0; 0];
+weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
+
+Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
 
 % figure(); imshow(img); hold on;
-% for i = 1:num_clusters
-  % cluster_id = find(T==i);
-mask = zeros(size(img));
-cluster_id = find(T==10);
-clust_col = rand(1,3);
-cluster_matrix = zeros(numel(cluster_id), 5);
-  for j = 1:numel(cluster_id)
-    pos = cluster_id(j);
-  cluster_matrix(j,:) = [dist_matrix(pos, 2), dist_matrix(pos, 1), dist_matrix(pos, 4), dist_matrix(pos, 5), dist_matrix(pos, 6)];
-  % plot(dist_matrix(pos, 1), dist_matrix(pos, 2), 'x', 'color', clust_col);
-  mask(rows(pos), cols(pos), 1:3) = 1;
-  % find min x co-ordinate
-   end
+for i = 1:num_clusters
+  cluster_id = find(T==i);
+% mask = zeros(size(img));
+% cluster_id = find(T==10);
+  clust_col = rand(1,3);
 
-[Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
+  % store indeces and rgb values of each cluster pos
+  cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 4:6)];
 
-for i = 1:numel(Idx)
-  row = img_matrix(Idx{i}, :);
-  plot(row(:, 2), row(:, 1), 'x', 'color', 'm');
+  % for j = 1:numel(cluster_id)
+  %   pos = cluster_id(j);
+  %   plot(pointcloud_matrix(pos, 1), pointcloud_matrix(pos, 2), 'x', 'color', clust_col);
+  %   % mask(rows(pos), cols(pos), 1:3) = 1;
+  %   % find min x co-ordinate
+  % end
+
+  % could add neighbouring points to cluster, then decrease distance metric and repeat, until no more points are added (i.e. keep decreasing distance)
+  % can also use custom distance here to give greater weighting to colour/near neighbours
+  [Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
+
+  for neighbours = 1:numel(Idx)
+    row = img_matrix(Idx{neighbours}, :);
+    plot(row(:, 2), row(:, 1), 'x', 'color', clust_col);
+  end
+
 end
-
-% figure();
-% imshow(img); hold on; axis on; grid on;
-
-% gradient_edges(img, velo_img, velo);
-% missing_gaps(img, velo_img_copy, velo_copy);
-% colour_difference(img, velo_img, velo);
-% threshold_by_depth(img, velo_img, velo);
- 
+%  
+%  maskedRgbImage = bsxfun(@times, img, cast(mask,class(img)));
+%
+%  for i = 1:size(cols)
+%    for j = 1:size(rows)
+%      r = img(i, j, 1);
+%      g = img(i, j, 2);
+%      b = img(i, j, 3);
+%
+%      mask_r = maskedRgbImage(i, j, 1);
+%      mask_g = maskedRgbImage(i, j, 2);
+%      mask_b = maskedRgbImage(i, j, 3);
+%
+%    end
+%  end
+%
+%
+%  fg_mask = (zeros(size(img)));
+%  bg_mask = (zeros(size(img)));
+%
+%  % Active contour not working well
+%  % bw = activecontour(img, mask, 300);
+%  % contour(bw, 'Color', 'm');
+%
+%  % figure();
+%  % imshow(img); hold on; axis on; grid on;
+%
+%  % gradient_edges(img, velo_img, velo);
+%  % missing_gaps(img, velo_img_copy, velo_copy);
+%  % colour_difference(img, velo_img, velo);
+%  % threshold_by_depth(img, velo_img, velo);
