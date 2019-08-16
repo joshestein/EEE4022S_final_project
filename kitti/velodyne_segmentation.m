@@ -93,6 +93,7 @@ end
 
 % stores co-ordinates and rgb values of each pixel
 img_matrix = zeros(size(img, 1)*size(img, 2), 5);
+img_matrix_lab = zeros(size(img, 1)*size(img, 2), 4);
 
 i = 1;
 for col = 1:size(img, 2)
@@ -103,6 +104,7 @@ for col = 1:size(img, 2)
     % I realized this and simply converted row and col
     % but the colours also need to be converted
     img_matrix(i, :) = [double(row), double(col), double(img(row, col, 1)), double(img(row, col, 2)), double(img(row, col, 3))];
+    img_matrix_lab(i, :) = [double(row), double(col), double(lab_img(row, col, 1)), double(lab_img(row, col, 2))];
     i = i + 1;
   end
 end
@@ -111,6 +113,7 @@ end
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
 pointcloud_matrix = [velo_img col_idx rgb_matrix];
+pointcloud_matrix_lab = [velo_img col_idx ab_matrix];
 
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
@@ -119,9 +122,11 @@ num_clusters = 6;
  
 % weights = [1; 1; 50; 0.5; 0.5; 0.5];
 weights = [1; 1; 100; 0; 0; 0];
+weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
-Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
+% Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
+Y = pdist(double(pointcloud_matrix_lab), @(XI, XJ) weighted_euc(XI, XJ, weights_lab));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
 
@@ -134,6 +139,7 @@ for i = 1:num_clusters
 
   % store indeces and rgb values of each cluster pos
   cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 4:6)];
+  cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
   % for j = 1:numel(cluster_id)
   %   pos = cluster_id(j);
@@ -144,7 +150,8 @@ for i = 1:num_clusters
 
   % could add neighbouring points to cluster, then decrease distance metric and repeat, until no more points are added (i.e. keep decreasing distance)
   % can also use custom distance here to give greater weighting to colour/near neighbours
-  [Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
+  % [Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
+  [Idx, D] = rangesearch(img_matrix_lab, cluster_matrix_lab, 5);
 
   for neighbours = 1:numel(Idx)
     row = img_matrix(Idx{neighbours}, :);
