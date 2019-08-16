@@ -22,6 +22,11 @@ big_gap_thresh = 200;
 
 fg_points = uint8(zeros(size(img)));
 for i = 2:size(velo_img, 1)
+  % ignore points outsize image
+  if (outside_image(img, velo_img, i))
+    continue;
+  end
+
   % ignore points high up
   if (velo(i,3) > 0.2)
     continue
@@ -36,7 +41,7 @@ for i = 2:size(velo_img, 1)
   end
 
   if (abs(x_pixel_pos-prev_x_pixel_pos) > gap_thresh)
-    for j = x_pixel_pos+1:prev_x_pixel_pos-1
+    for j = x_pixel_pos:prev_x_pixel_pos
       if (j > size(img, 2))
         break
       end
