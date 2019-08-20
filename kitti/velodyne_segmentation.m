@@ -1,5 +1,6 @@
-base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
+% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
+% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 addpath(sdk_dir);
@@ -7,7 +8,8 @@ addpath(sdk_dir);
 cam       = 2; % 0-based index
 % frame = 392 for drive 93
 % frame = 329 for drive 09
-frame     = 241; % 0-based index
+% frame = 42 for drive 13
+frame     = 329; % 0-based index
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -21,9 +23,9 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
 lab_img = rgb2lab(img);
-fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
-imshow(img); hold on;
-axis on; grid on;
+% fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
+% imshow(img); hold on;
+% axis on; grid on;
 
 % load velodyne points
 fid = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,frame),'rb');
@@ -118,7 +120,7 @@ pointcloud_matrix_lab = [velo_img col_idx ab_matrix];
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
 % where similarity is based on depth, colour, position
-num_clusters = 6;
+num_clusters = 15;
  
 % weights = [1; 1; 50; 0.5; 0.5; 0.5];
 weights = [1; 1; 100; 0; 0; 0];
@@ -126,11 +128,13 @@ weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
 % Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
-Y = pdist(double(pointcloud_matrix_lab), @(XI, XJ) weighted_euc(XI, XJ, weights_lab));
+Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
+% T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
-% figure(); imshow(img); hold on;
+figure(); imshow(img); hold on;
+% for i = 1:size(unique(T))
 for i = 1:num_clusters
   cluster_id = find(T==i);
 % mask = zeros(size(img));
@@ -140,6 +144,12 @@ for i = 1:num_clusters
   % store indeces and rgb values of each cluster pos
   cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 4:6)];
   cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
+
+  if (numel(pointcloud_matrix(cluster_id, 1)) > 30)
+    K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
+    plot(cluster_matrix(K, 2), cluster_matrix(K, 1), 'r');
+  end
+
 
   % for j = 1:numel(cluster_id)
   %   pos = cluster_id(j);
@@ -151,12 +161,12 @@ for i = 1:num_clusters
   % could add neighbouring points to cluster, then decrease distance metric and repeat, until no more points are added (i.e. keep decreasing distance)
   % can also use custom distance here to give greater weighting to colour/near neighbours
   % [Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
-  [Idx, D] = rangesearch(img_matrix_lab, cluster_matrix_lab, 5);
+  % [Idx, D] = rangesearch(img_matrix, cluster_matrix, 3);
 
-  for neighbours = 1:numel(Idx)
-    row = img_matrix(Idx{neighbours}, :);
-    plot(row(:, 2), row(:, 1), 'x', 'color', clust_col);
-  end
+  % for neighbours = 1:numel(Idx)
+  %   row = img_matrix(Idx{neighbours}, :);
+  %   plot(row(:, 2), row(:, 1), 'x', 'color', clust_col);
+  % end
 
 end
 %  
@@ -187,6 +197,6 @@ end
 %  % imshow(img); hold on; axis on; grid on;
 %
 %  % gradient_edges(img, velo_img, velo);
-%  % missing_gaps(img, velo_img_copy, velo_copy);
+% missing_gaps(img, velo_img_copy, velo_copy);
 %  % colour_difference(img, velo_img, velo);
 %  % threshold_by_depth(img, velo_img, velo);
