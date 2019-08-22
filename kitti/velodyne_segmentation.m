@@ -23,8 +23,8 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
 lab_img = rgb2lab(img);
-% fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
-% imshow(img); hold on;
+fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
+imshow(img); hold on;
 % axis on; grid on;
 
 % load velodyne points
@@ -87,7 +87,7 @@ for i=1:size(velo_img,1)
   % colours = cols = 64 x 3
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
-  % plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
@@ -133,8 +133,17 @@ Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
 % T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
-figure(); imshow(img); hold on;
+% figure(); imshow(img); hold on;
 % for i = 1:size(unique(T))
+
+% store polygons (convex hull shapes)
+polygons = [];
+
+% store the points inside each polygon
+num_cluster_points = [];
+
+% used to keep track of which cluster points are in which polygon
+poly_idx = 1;
 for i = 1:num_clusters
   cluster_id = find(T==i);
 % mask = zeros(size(img));
@@ -145,10 +154,56 @@ for i = 1:num_clusters
   cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 4:6)];
   cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
-  if (numel(pointcloud_matrix(cluster_id, 1)) > 30)
+  if (numel(cluster_id) > 30)
     K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
-    plot(cluster_matrix(K, 2), cluster_matrix(K, 1), 'r');
+    pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,1));
+    % roi = poly2mask(cluster_matrix(K,2), cluster_matrix(K, 1), size(img,1), size(img,2));
+    polygons = [polygons; pgon];
+    index = poly_idx.*ones(numel(cluster_id), 1);
+    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1)];
+    poly_idx = poly_idx + 1;
+
+    % num_points = numel(cluster_matrix(:,1))
+    % if num_points > point threshold && distance (x,y,z) > something 
+    % then point is background and remove from clusters
+    % end
+
+    % BW = grabcut(img, L, roi);
+    % figure();
+    % imshow(BW);
+    % plot(pgon);
+    %plot(cluster_matrix(K, 2), cluster_matrix(K, 1), 'r');
   end
+end
+
+% remove lower triangular since symmetric
+poly_intersects = triu(overlaps(polygons));
+% remove diagonal elements
+poly_intersects = triu(poly_intersects, 1) + tril(poly_intersects, -1);
+
+% r, c gives polygon indeces for first and second polygon respectively
+[r, c] = find(poly_intersects == 1);
+for i = 1:size(r)
+  % number of (velodyne) cluster points from first cluster in polygon intersection
+  cluster_idx = find(num_points(:,1) == r(i));
+  intersection = intersect(polygons(r(i)), polygons(c(i)));
+  [in, on] = inpolygon(num_cluster_points(cluster_idx, 2), num_cluster_points(cluster_idx, 3), intersection.Vertices(:,1), intersection.Vertices(:,2));
+  inon = in | on; % combine in and on
+
+  % number of (velodyne) cluster points from second cluster in polygon intersection
+  cluster_idx_2 = find(num_points(:,1) == c(i));
+  [in_2, on_2] = inpolygon(num_cluster_points(cluster_idx_2, 2), num_cluster_points(cluster_idx_2, 3), intersection.Vertices(:,1), intersection.Vertices(:,2));
+  inon_2 = in_2 | on_2; % combine in and on
+
+  % remove polygon with fewer cluster points in intersection
+  if (numel(inon) > numel(inon_2))
+    polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
+  else
+    polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
+  end
+end
+
+plot(polygons);
 
 
   % for j = 1:numel(cluster_id)
@@ -168,7 +223,6 @@ for i = 1:num_clusters
   %   plot(row(:, 2), row(:, 1), 'x', 'color', clust_col);
   % end
 
-end
 %  
 %  maskedRgbImage = bsxfun(@times, img, cast(mask,class(img)));
 %
