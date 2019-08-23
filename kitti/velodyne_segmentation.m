@@ -151,16 +151,19 @@ for i = 1:num_clusters
   clust_col = rand(1,3);
 
   % store indeces and rgb values of each cluster pos
-  cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 4:6)];
+  cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 3:6)];
   cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
   if (numel(cluster_id) > 30)
-    K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
+    % disp(num2str(numel(cluster_id)));
+    % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
+    % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
+    K = convhull(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2));
     pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,1));
     % roi = poly2mask(cluster_matrix(K,2), cluster_matrix(K, 1), size(img,1), size(img,2));
     polygons = [polygons; pgon];
     index = poly_idx.*ones(numel(cluster_id), 1);
-    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1)];
+    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3)];
     poly_idx = poly_idx + 1;
 
     % num_points = numel(cluster_matrix(:,1))
@@ -185,21 +188,40 @@ poly_intersects = triu(poly_intersects, 1) + tril(poly_intersects, -1);
 [r, c] = find(poly_intersects == 1);
 for i = 1:size(r)
   % number of (velodyne) cluster points from first cluster in polygon intersection
-  cluster_idx = find(num_points(:,1) == r(i));
+  cluster_idx = find(num_cluster_points(:,1) == r(i));
   intersection = intersect(polygons(r(i)), polygons(c(i)));
   [in, on] = inpolygon(num_cluster_points(cluster_idx, 2), num_cluster_points(cluster_idx, 3), intersection.Vertices(:,1), intersection.Vertices(:,2));
   inon = in | on; % combine in and on
 
+  % remove points from cluster that are not part of intersection
+  cluster_idx( ~any(cluster_idx.*inon, 2), :) = [];
+
+  % calculate 'depth' of points in intersection from first cluster
+  average_depth = mean(num_cluster_points(cluster_idx, 4));
+
   % number of (velodyne) cluster points from second cluster in polygon intersection
-  cluster_idx_2 = find(num_points(:,1) == c(i));
+  cluster_idx_2 = find(num_cluster_points(:,1) == c(i));
   [in_2, on_2] = inpolygon(num_cluster_points(cluster_idx_2, 2), num_cluster_points(cluster_idx_2, 3), intersection.Vertices(:,1), intersection.Vertices(:,2));
   inon_2 = in_2 | on_2; % combine in and on
 
+  % remove points from cluster that are not part of intersection
+  cluster_idx_2( ~any(cluster_idx_2.*inon_2, 2), :) = [];
+
+  % calculate 'depth' of points in intersection from first cluster
+  average_depth_2 = mean(num_cluster_points(cluster_idx_2, 4));
+
   % remove polygon with fewer cluster points in intersection
-  if (numel(inon) > numel(inon_2))
-    polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
+  % if (numel(inon) > numel(inon_2))
+  %   polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
+  % else
+  %   polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
+  % end
+
+  % remove polygon further back (keep thing in front)
+  if (average_depth > average_depth_2)
+     polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
   else
-    polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
+     polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
   end
 end
 
