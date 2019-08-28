@@ -48,16 +48,26 @@ velo_copy = velo;
 % thresh of 1 is conservative
 % negative because velo is centered at 0 on each of it's axes
 % that is, half the points are above z = 0 and half below
-height_thresh = -1.2;
+height_thresh = -1.3;
 idx = velo(:,3) < height_thresh;
 velo(idx,:) = [];
 
+% keep bg points for removing background from clusters later
+% only keep 'higher points' - i.e. not road
+bg_velo = zeros(size(velo));
+
 % remove very things above a particular height ~ 2m
 idx = velo(:,3) > 0.1;
+bg_velo(idx, :) = velo(idx,:);
 velo(idx,:) = [];
+
+% remove zeros from bg_velo
+zero_rows = ~any(bg_velo, 2);
+bg_velo(zero_rows, :) = [];
 
 % project to image plane (exclude luminance)
 velo_img = project(velo(:,1:3),P_velo_to_img);
+bg_velo_img = project(bg_velo(:,1:3),P_velo_to_img);
 velo_img_copy = project(velo_copy(:,1:3),P_velo_to_img);
 
 % remove all points outside of image
@@ -71,11 +81,24 @@ while (i <= size(velo_img, 1))
   end
 end
 
+i = 1;
+while (i <= size(bg_velo_img, 1))
+  if outside_image(img, bg_velo_img, i)
+    bg_velo_img(i,:) = [];
+    bg_velo(i, :) = [];
+  else
+    i = i + 1;
+  end
+end
+
+% bg_velo_img = unique(bg_img, 'rows');
+
 % plot points
 colours = jet;
 col_idx = round(64*5./velo(:,1));
 
 rgb_matrix = zeros(size(velo_img, 1), 3);
+bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
 ab_matrix = zeros(size(velo_img, 1), 2);
 rows = round(velo_img(:,2));
 cols = round(velo_img(:,1));
@@ -91,6 +114,17 @@ for i=1:size(velo_img,1)
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
+end
+
+bg_col_idx = round(64*5./bg_velo(:,1));
+% for i = 1:size(bg_velo_img, 1)
+%   plot(bg_velo_img(i, 1), bg_img(i, 2), 'x', 'LineWidth', 4, 'MarkerSize', 1, 'Color', colours(bg_col_idx(i),:));
+% end
+
+bg_rows = round(bg_velo_img(:, 2));
+bg_cols = round(bg_velo_img(:, 1));
+for i = 1:size(bg_velo_img, 1)
+  bg_rgb_matrix(i, 1:3) = img(bg_rows(i), bg_cols(i), 1:3);
 end
 
 % stores co-ordinates and rgb values of each pixel
@@ -117,10 +151,13 @@ end
 pointcloud_matrix = [velo_img col_idx rgb_matrix];
 pointcloud_matrix_lab = [velo_img col_idx ab_matrix];
 
+bg_pointcloud_matrix = [bg_velo_img bg_col_idx bg_rgb_matrix];
+
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
 % where similarity is based on depth, colour, position
 num_clusters = 15;
+bg_num_clusters = 5;
  
 % weights = [1; 1; 50; 0.5; 0.5; 0.5];
 weights = [1; 1; 100; 0; 0; 0];
@@ -131,10 +168,30 @@ weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
+
+bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
+bg_Z = linkage(bg_Y);
+bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
 % T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
-% figure(); imshow(img); hold on;
-% for i = 1:size(unique(T))
+bg_polygons = [];
+bg_cluster_points = [];
+bg_idx = 1;
+for i = 1:bg_num_clusters
+  bg_cluster_id = find(bg_T == i);
+  bg_cluster_matrix = [bg_pointcloud_matrix(bg_cluster_id, 2), bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 3:6)];
+  % plot(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2), 'color', clust_col);
+  if (numel(bg_cluster_id) > 30)
+    K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
+    pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
+    bg_polygons = [bg_polygons; pgon];
+
+    index = bg_idx.*ones(numel(bg_cluster_id), 1);
+    bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
+    bg_idx = bg_idx + 1;
+  end
+end
+% plot(bg_polygons);
 
 % store polygons (convex hull shapes)
 polygons = [];
