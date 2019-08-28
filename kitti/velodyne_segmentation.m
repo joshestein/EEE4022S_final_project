@@ -194,6 +194,7 @@ end
 % plot(bg_polygons);
 
 % store polygons (convex hull shapes)
+% figure(); imshow(img); hold on;
 polygons = [];
 
 % store the points inside each polygon
@@ -202,6 +203,7 @@ num_cluster_points = [];
 % used to keep track of which cluster points are in which polygon
 poly_idx = 1;
 for i = 1:num_clusters
+  found_bg_clust = false;
   cluster_id = find(T==i);
 % mask = zeros(size(img));
 % cluster_id = find(T==10);
@@ -215,19 +217,44 @@ for i = 1:num_clusters
     % disp(num2str(numel(cluster_id)));
     % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
     % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
+
+    for j = 1:bg_num_clusters
+      bg_clust_idx = find(bg_T == j);
+
+      % calculate colour and positional differences between current fg_cluster
+      % and all bg_clusters
+      % if they're very close, assume current fg_cluster is actually part of background
+      col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+      p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+      if (col_dist < 0.4 && p_dist < 1e05)
+        % disp('Similar clusters found');
+        % TODO: add fg points to bg points
+        col = rand(1,3);
+        found_bg_clust = true;
+        % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'color', col);
+        % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'color', col);
+        break;
+      end
+    end
+
+    if (found_bg_clust)
+      continue;
+    end
+
+    index = poly_idx.*ones(numel(cluster_id), 1);
+    temp = [index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:, 3:6)];
     K = convhull(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2));
     pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,1));
-    % roi = poly2mask(cluster_matrix(K,2), cluster_matrix(K, 1), size(img,1), size(img,2));
     polygons = [polygons; pgon];
-    index = poly_idx.*ones(numel(cluster_id), 1);
-    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3)];
-    poly_idx = poly_idx + 1;
 
+    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3:6)];
+    poly_idx = poly_idx + 1;
     % num_points = numel(cluster_matrix(:,1))
     % if num_points > point threshold && distance (x,y,z) > something 
     % then point is background and remove from clusters
     % end
 
+    % roi = poly2mask(cluster_matrix(K,2), cluster_matrix(K, 1), size(img,1), size(img,2));
     % BW = grabcut(img, L, roi);
     % figure();
     % imshow(BW);
@@ -333,3 +360,61 @@ plot(polygons);
 % missing_gaps(img, velo_img_copy, velo_copy);
 %  % colour_difference(img, velo_img, velo);
 %  % threshold_by_depth(img, velo_img, velo);
+
+function colour_dist = hist_colour_dist(bg_clust, fg_clust)
+  % build colour histograms for bg_clust and fg_clust
+  % compute differences btw. histograms
+  % returns overall distance
+  % smaller = more similar
+
+  % get r, g, b
+  bg_r = bg_clust(:, 4);
+  bg_g = bg_clust(:, 5);
+  bg_b = bg_clust(:, 6);
+
+  r = fg_clust(:, 4);
+  g = fg_clust(:, 5);
+  b = fg_clust(:, 6);
+
+  % build histograms
+  bg_r = imhist(bg_r./255, 16);
+  bg_g = imhist(bg_g./255, 16);
+  bg_b = imhist(bg_b./255, 16);
+
+  r = imhist(r./255, 16);
+  g = imhist(g./255, 16);
+  b = imhist(b./255, 16);
+
+  % normalize histograms
+  bg_r = bg_r./numel(bg_clust);
+  bg_g = bg_g./numel(bg_clust);
+  bg_b = bg_b./numel(bg_clust);
+
+  r = r./numel(fg_clust);
+  g = g./numel(fg_clust);
+  b = b./numel(fg_clust);
+
+  % compute histogram differences
+  res_r = sum(abs(bg_r - r));
+  res_g = sum(abs(bg_g - g));
+  res_b = sum(abs(bg_b - b));
+
+  % sum resulting differences
+  colour_dist = res_r + res_g + res_b;
+end
+
+function dist = pos_dist(bg_clust, fg_clust)
+  % computes distance between average x,y of fg and bg clusters
+  bg_x = mean(bg_clust(:,1));
+  bg_y = mean(bg_clust(:,2));
+
+  x = mean(fg_clust(:,1));
+  y = mean(fg_clust(:,2));
+
+  x_dist = abs(x-bg_x); 
+  y_dist = abs(y-bg_y);
+
+  % ignore sqrt for computational efficiency
+  dist = x_dist^2+y_dist^2;
+
+end
