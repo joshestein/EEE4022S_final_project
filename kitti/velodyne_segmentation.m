@@ -1,24 +1,34 @@
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
-base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
+% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
+
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
+odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
 addpath(sdk_dir);
 
 cam       = 2; % 0-based index
 % frame = 392 for drive 93
 % frame = 329 for drive 09
 % frame = 42 for drive 13
-frame     = 329; % 0-based index
+frame     = 397; % 0-based index
+forward_frames = 3;
+odo_sequence = 7;
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
 Tr_velo_to_cam = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'));
+odo_calib = load_odometry(fullfile([odo_dir, sprintf('0%d.txt', odo_sequence)]));
+if isempty(odo_calib)
+  disp('Failed to read odometry data');
+end
 
 % compute projection matrix velodyne->image plane
 R_cam_to_rect = eye(4);
 R_cam_to_rect(1:3,1:3) = calib.R_rect{1};
-P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
+% P3 (left colour cam) * cam->cam calibration * velo->cam calibration
+% P_velo_to_img = odo_calib{frame+10} * calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
@@ -26,47 +36,68 @@ lab_img = rgb2lab(img);
 fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
 imshow(img); hold on;
 % axis on; grid on;
+colours = jet;
 
-% load velodyne points
-fid = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,frame),'rb');
-velo = fread(fid,[4 inf],'single')';
-% velo = velo(1:5:end,:); % remove every 5th point for display speed
-fclose(fid);
+for f = frame:frame+forward_frames
+  % odo_diff = inv(odo_calib{frame+1}) * odo_calib{f};
+  odo_diff = odo_calib{frame+1}\odo_calib{f+1};
 
-% remove all points behind image plane (approximation
-idx = velo(:,1)<5;
-velo(idx,:) = [];
+  P_velo_to_img = calib.P_rect{cam + 1} * R_cam_to_rect * odo_diff * Tr_velo_to_cam;
+  % load velodyne points
+  fid = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,f),'rb');
+  velo = fread(fid,[4 inf],'single')';
+  % velo = velo(1:5:end,:); % remove every 5th point for display speed
+  fclose(fid);
 
-% remove points far in the distance
-idx = velo(:,1) > 30;
-velo(idx,:) = [];
+  % remove all points behind image plane (approximation
+  idx = velo(:,1)<5;
+  velo(idx,:) = [];
 
-% velo_copy is not thresholded for height
-velo_copy = velo;
+  % remove points far in the distance
+  idx = velo(:,1) > 30;
+  velo(idx,:) = [];
 
-% remove points that have a height of ~ 0.2 m
-% thresh of 1 is conservative
-% negative because velo is centered at 0 on each of it's axes
-% that is, half the points are above z = 0 and half below
-height_thresh = -1.3;
-idx = velo(:,3) < height_thresh;
-velo(idx,:) = [];
+  % velo_copy is not thresholded for height
+  velo_copy = velo;
 
-% keep bg points for removing background from clusters later
-% only keep 'higher points' - i.e. not road
-bg_velo = zeros(size(velo));
+  % remove points that have a height of ~ 0.2 m
+  % thresh of 1 is conservative
+  % negative because velo is centered at 0 on each of its axes
+  % that is, half the points are above z = 0 and half below
+  height_thresh = -1.3;
+  idx = velo(:,3) < height_thresh;
+  velo(idx,:) = [];
 
-% remove very things above a particular height ~ 2m
-idx = velo(:,3) > 0.1;
-bg_velo(idx, :) = velo(idx,:);
-velo(idx,:) = [];
+  % keep bg points for removing background from clusters later
+  % only keep 'higher points' - i.e. not road
+  bg_velo = zeros(size(velo));
 
-% remove zeros from bg_velo
-zero_rows = ~any(bg_velo, 2);
-bg_velo(zero_rows, :) = [];
+  % remove very things above a particular height ~ 2m
+  idx = velo(:,3) > 0.1;
+  bg_velo(idx, :) = velo(idx,:);
+  velo(idx,:) = [];
 
-% project to image plane (exclude luminance)
-velo_img = project(velo(:,1:3),P_velo_to_img);
+  % remove zeros from bg_velo
+  zero_rows = ~any(bg_velo, 2);
+  bg_velo(zero_rows, :) = [];
+
+  % transform to current frame
+
+  % project to image plane (exclude luminance)
+  % velo_img = project(velo(:,1:3),P_velo_to_img);
+
+  velo_img = project(velo(:,1:3), P_velo_to_img);
+  col_idx = round(64*5./velo(:,1));
+
+  for i=1:size(velo_img,1)
+    % colours = cols = 64 x 3
+    % 5 main colours (more and it breaks?)
+    % min(velo(:,1)) == 5
+    plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  end
+end
+return;
+
 bg_velo_img = project(bg_velo(:,1:3),P_velo_to_img);
 velo_img_copy = project(velo_copy(:,1:3),P_velo_to_img);
 
@@ -161,10 +192,10 @@ bg_num_clusters = 5;
  
 % weights = [1; 1; 50; 0.5; 0.5; 0.5];
 weights = [1; 1; 100; 0; 0; 0];
+rgb_weights = [0; 0; 100; 10; 10; 10];
 weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
-% Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
@@ -214,7 +245,6 @@ for i = 1:num_clusters
   cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
   if (numel(cluster_id) > 30)
-    % disp(num2str(numel(cluster_id)));
     % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
     % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
 
@@ -261,6 +291,13 @@ for i = 1:num_clusters
     % plot(pgon);
     %plot(cluster_matrix(K, 2), cluster_matrix(K, 1), 'r');
   end
+end
+
+% no polygons found
+% :( :( :(
+if isempty(polygons)
+  disp('No objects detected.');
+  return
 end
 
 % remove lower triangular since symmetric
@@ -356,7 +393,7 @@ plot(polygons);
 %  % figure();
 %  % imshow(img); hold on; axis on; grid on;
 %
-%  % gradient_edges(img, velo_img, velo);
+% gradient_edges(img, velo_img, velo);
 % missing_gaps(img, velo_img_copy, velo_copy);
 %  % colour_difference(img, velo_img, velo);
 %  % threshold_by_depth(img, velo_img, velo);
@@ -416,5 +453,37 @@ function dist = pos_dist(bg_clust, fg_clust)
 
   % ignore sqrt for computational efficiency
   dist = x_dist^2+y_dist^2;
+
+end
+
+function [success, intra_clusts] = multi_intra_clust(clust)
+  % determines if there are multiple clusters within a single cluster
+  % uses colour as determining factor
+  %
+  % input:
+  % clust - pointcloud_matrix rows (x, y, depth, r, g, b)
+  % ------------------------------------------------
+  % output:
+  % intra_clusts is a cell array - each cell corresponds to an intra cluster
+
+
+  % things to think about:
+  % could convert to grayscale, use Otsu's thresholding
+  % could try grouping nearest neighbours
+  % could try re-running heirarchical clustering based purely on r,g,b and x,y
+  % could try building histograms and finding distinct valleys
+  % could try segmenting via Lab with a set number of clusters
+
+  r = clust(:, 4);
+  g = clust(:, 5);
+  b = clust(:, 6);
+
+  r = imhist(r./255, 16);
+  g = imhist(g./255, 16);
+  b = imhist(b./255, 16);
+
+  r = r./numel(fg_clust);
+  g = g./numel(fg_clust);
+  b = b./numel(fg_clust);
 
 end
