@@ -14,6 +14,7 @@ cam       = 2; % 0-based index
 % frame = 42 for drive 13
 frame     = 397; % 0-based index
 forward_frames = 3;
+backward_frames = 3;
 odo_sequence = 7;
 
 % load calibration
@@ -38,7 +39,7 @@ imshow(img); hold on;
 % axis on; grid on;
 colours = jet;
 
-for f = frame:frame+forward_frames
+for f = frame-backward_frames:frame+forward_frames
   % odo_diff = inv(odo_calib{frame+1}) * odo_calib{f};
   odo_diff = odo_calib{frame+1}\odo_calib{f+1};
 
