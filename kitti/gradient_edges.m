@@ -39,8 +39,8 @@ draw_mask = false;
 % find edges based on gradient changes in velodyne
 % make sure you are not thresholding for height when using
 for i = 2:size(velo_img, 1)
-  old_x = round(64*5/velo(i-1,1));
-  x = round(64*5/velo(i,1));
+  old_x = round(velo(i-1,1));
+  x = round(velo(i,1));
 
   % if (draw_mask)
   %   mask(round(velo_img(i,2)), round(velo_img(i,1))) = true;
