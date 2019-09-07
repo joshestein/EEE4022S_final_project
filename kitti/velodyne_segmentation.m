@@ -1,7 +1,6 @@
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
-base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
 
 % keep these global to access from read_velo.m
 global base_dir;
@@ -19,9 +18,9 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 frame     = 397; % 0-based index
-forward_frames = 3;
-backward_frames = 3;
-odo_sequence = 7;
+forward_frames = 1;
+backward_frames = 0;
+odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -86,24 +85,22 @@ for f = frame-backward_frames:frame+forward_frames
   multi_velo = [multi_velo; velo];
 end
 
-% plot points
 colours = jet;
-col_idx = round(64*5./velo(:,1));
+col_idx = round(64*5./multi_velo(:,1));
 
-rgb_matrix = zeros(size(velo_img, 1), 3);
+rgb_matrix = zeros(size(multi_velo_img, 1), 3);
 bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
-ab_matrix = zeros(size(velo_img, 1), 2);
-rows = round(velo_img(:,2));
-cols = round(velo_img(:,1));
+ab_matrix = zeros(size(multi_velo_img, 1), 2);
+rows = round(multi_velo_img(:,2));
+cols = round(multi_velo_img(:,1));
 
 % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
 
-
-for i=1:size(velo_img,1)
+for i=1:size(multi_velo_img,1)
   % colours = cols = 64 x 3
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
-  plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
@@ -141,8 +138,8 @@ end
 % matrix to store variables for clustering based on Euclidean distance
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
-pointcloud_matrix = [velo_img col_idx rgb_matrix];
-pointcloud_matrix_lab = [velo_img col_idx ab_matrix];
+pointcloud_matrix = [multi_velo_img col_idx rgb_matrix];
+pointcloud_matrix_lab = [multi_velo_img col_idx ab_matrix];
 
 bg_pointcloud_matrix = [bg_velo_img bg_col_idx bg_rgb_matrix];
 
@@ -173,7 +170,8 @@ bg_idx = 1;
 for i = 1:bg_num_clusters
   bg_cluster_id = find(bg_T == i);
   bg_cluster_matrix = [bg_pointcloud_matrix(bg_cluster_id, 2), bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 3:6)];
-  % plot(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2), 'color', clust_col);
+  % clust_col = rand(1,3);
+  % plot(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2), 'x', 'color', clust_col);
   if (numel(bg_cluster_id) > 30)
     K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
     pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
@@ -205,6 +203,8 @@ for i = 1:num_clusters
   % store indeces and rgb values of each cluster pos
   cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 3:6)];
   cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
+
+  % plot(cluster_matrix(:,2), cluster_matrix(:,1), 'x', 'color', clust_col);
 
   if (numel(cluster_id) > 30)
     % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
