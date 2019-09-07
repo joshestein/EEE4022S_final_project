@@ -3,6 +3,12 @@
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
 base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
 
+% keep these global to access from read_velo.m
+global base_dir;
+global img;
+
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
+
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -29,7 +35,7 @@ end
 R_cam_to_rect = eye(4);
 R_cam_to_rect(1:3,1:3) = calib.R_rect{1};
 % P3 (left colour cam) * cam->cam calibration * velo->cam calibration
-% P_velo_to_img = odo_calib{frame+10} * calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
+P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
@@ -37,82 +43,12 @@ lab_img = rgb2lab(img);
 fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
 imshow(img); hold on;
 % axis on; grid on;
-colours = jet;
 
-for f = frame-backward_frames:frame+forward_frames
-  % odo_diff = inv(odo_calib{frame+1}) * odo_calib{f};
-  odo_diff = odo_calib{frame+1}\odo_calib{f+1};
-
-  P_velo_to_img = calib.P_rect{cam + 1} * R_cam_to_rect * odo_diff * Tr_velo_to_cam;
-  % load velodyne points
-  fid = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,f),'rb');
-  velo = fread(fid,[4 inf],'single')';
-  % velo = velo(1:5:end,:); % remove every 5th point for display speed
-  fclose(fid);
-
-  % remove all points behind image plane (approximation
-  idx = velo(:,1)<5;
-  velo(idx,:) = [];
-
-  % remove points far in the distance
-  idx = velo(:,1) > 30;
-  velo(idx,:) = [];
-
-  % velo_copy is not thresholded for height
-  velo_copy = velo;
-
-  % remove points that have a height of ~ 0.2 m
-  % thresh of 1 is conservative
-  % negative because velo is centered at 0 on each of its axes
-  % that is, half the points are above z = 0 and half below
-  height_thresh = -1.3;
-  idx = velo(:,3) < height_thresh;
-  velo(idx,:) = [];
-
-  % keep bg points for removing background from clusters later
-  % only keep 'higher points' - i.e. not road
-  bg_velo = zeros(size(velo));
-
-  % remove very things above a particular height ~ 2m
-  idx = velo(:,3) > 0.1;
-  bg_velo(idx, :) = velo(idx,:);
-  velo(idx,:) = [];
-
-  % remove zeros from bg_velo
-  zero_rows = ~any(bg_velo, 2);
-  bg_velo(zero_rows, :) = [];
-
-  % transform to current frame
-
-  % project to image plane (exclude luminance)
-  % velo_img = project(velo(:,1:3),P_velo_to_img);
-
-  velo_img = project(velo(:,1:3), P_velo_to_img);
-  col_idx = round(64*5./velo(:,1));
-
-  for i=1:size(velo_img,1)
-    % colours = cols = 64 x 3
-    % 5 main colours (more and it breaks?)
-    % min(velo(:,1)) == 5
-    plot(velo_img(i,1),velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
-  end
-end
-return;
+[base_velo, base_velo_img, bg_velo] = read_velo(frame, P_velo_to_img);
 
 bg_velo_img = project(bg_velo(:,1:3),P_velo_to_img);
-velo_img_copy = project(velo_copy(:,1:3),P_velo_to_img);
 
-% remove all points outside of image
-i = 1;
-while (i <= size(velo_img, 1))
-  if outside_image(img, velo_img, i)
-    velo_img(i,:) = [];
-    velo(i, :) = [];
-  else
-    i = i + 1;
-  end
-end
-
+% remove points from bg_img outside img
 i = 1;
 while (i <= size(bg_velo_img, 1))
   if outside_image(img, bg_velo_img, i)
@@ -123,7 +59,32 @@ while (i <= size(bg_velo_img, 1))
   end
 end
 
-% bg_velo_img = unique(bg_img, 'rows');
+multi_velo_img = base_velo_img;
+multi_velo = base_velo;
+
+% get velo points from multiple frames
+for f = frame-backward_frames:frame+forward_frames
+  if (f == frame)
+    continue
+  end
+
+  % determine transform from forward/backward frames to base frame
+  odo_diff = odo_calib{frame+1}\odo_calib{f+1};
+
+  % build transform matrix
+  P_velo_to_img = calib.P_rect{cam + 1} * R_cam_to_rect * odo_diff * Tr_velo_to_cam;
+
+  % load velodyne points
+  [velo, velo_img] = read_velo(f, P_velo_to_img);
+
+  % find nearest y,z neighbour in base frame (x is depth(forward))
+  nearest_yz = knnsearch(base_velo(:,2:3), velo(:,2:3));
+  % % set depth to be that of nearest neighbour
+  velo(:,1) = base_velo(nearest_yz, 1);
+
+  multi_velo_img = [multi_velo_img; velo_img];
+  multi_velo = [multi_velo; velo];
+end
 
 % plot points
 colours = jet;
