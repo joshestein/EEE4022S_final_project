@@ -18,7 +18,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 frame     = 397; % 0-based index
-forward_frames = 1;
+forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
@@ -108,7 +108,7 @@ end
 
 bg_col_idx = round(64*5./bg_velo(:,1));
 % for i = 1:size(bg_velo_img, 1)
-%   plot(bg_velo_img(i, 1), bg_img(i, 2), 'x', 'LineWidth', 4, 'MarkerSize', 1, 'Color', colours(bg_col_idx(i),:));
+%   plot(bg_velo_img(i, 1), bg_velo_img(i, 2), 'x', 'LineWidth', 4, 'MarkerSize', 1, 'Color', colours(bg_col_idx(i),:));
 % end
 
 bg_rows = round(bg_velo_img(:, 2));
@@ -118,22 +118,23 @@ for i = 1:size(bg_velo_img, 1)
 end
 
 % stores co-ordinates and rgb values of each pixel
-img_matrix = zeros(size(img, 1)*size(img, 2), 5);
-img_matrix_lab = zeros(size(img, 1)*size(img, 2), 4);
-
-i = 1;
-for col = 1:size(img, 2)
-  for row = 1:size(img, 1)
-    % [row, col, img(row, col, 1:3)]?
-    % this is fucking dumb
-    % _everything_ needs to be 'double', because uint8 clips at 255
-    % I realized this and simply converted row and col
-    % but the colours also need to be converted
-    img_matrix(i, :) = [double(row), double(col), double(img(row, col, 1)), double(img(row, col, 2)), double(img(row, col, 3))];
-    img_matrix_lab(i, :) = [double(row), double(col), double(lab_img(row, col, 1)), double(lab_img(row, col, 2))];
-    i = i + 1;
-  end
-end
+% used for a rangesearch later to find nearest pixels in image to velodyne points
+% img_matrix = zeros(size(img, 1)*size(img, 2), 5);
+% img_matrix_lab = zeros(size(img, 1)*size(img, 2), 4);
+% 
+% i = 1;
+% for col = 1:size(img, 2)
+%   for row = 1:size(img, 1)
+%     % [row, col, img(row, col, 1:3)]?
+%     % this is fucking dumb
+%     % _everything_ needs to be 'double', because uint8 clips at 255
+%     % I realized this and simply converted row and col
+%     % but the colours also need to be converted
+%     img_matrix(i, :) = [double(row), double(col), double(img(row, col, 1)), double(img(row, col, 2)), double(img(row, col, 3))];
+%     img_matrix_lab(i, :) = [double(row), double(col), double(lab_img(row, col, 1)), double(lab_img(row, col, 2))];
+%     i = i + 1;
+%   end
+% end
 
 % matrix to store variables for clustering based on Euclidean distance
 % format:
@@ -147,10 +148,10 @@ bg_pointcloud_matrix = [bg_velo_img bg_col_idx bg_rgb_matrix];
 % and then merge similar clusters together
 % where similarity is based on depth, colour, position
 num_clusters = 15;
-bg_num_clusters = 5;
+bg_num_clusters = 15;
  
-% weights = [1; 1; 50; 0.5; 0.5; 0.5];
 weights = [1; 1; 100; 0; 0; 0];
+bg_weights = [5; 1; 1; 5; 5; 5];
 rgb_weights = [0; 0; 100; 10; 10; 10];
 weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
@@ -159,14 +160,26 @@ Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
 Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
 
-bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
+bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, bg_weights));
 bg_Z = linkage(bg_Y);
 bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
 % T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
+% store polygons (convex hull shapes)
+% figure(); imshow(img); hold on;
+polygons = [];
 bg_polygons = [];
+
+% store the points inside each polygon
+% format: cluster_number, y, x, depth, r, g, b
+% cannot remember why I switched x and y
+num_cluster_points = [];
 bg_cluster_points = [];
+
+% used to keep track of which cluster points are in which polygon
+poly_idx = 1;
 bg_idx = 1;
+
 for i = 1:bg_num_clusters
   bg_cluster_id = find(bg_T == i);
   bg_cluster_matrix = [bg_pointcloud_matrix(bg_cluster_id, 2), bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 3:6)];
@@ -178,24 +191,28 @@ for i = 1:bg_num_clusters
     bg_polygons = [bg_polygons; pgon];
 
     index = bg_idx.*ones(numel(bg_cluster_id), 1);
-    bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
+    bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
+    % bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
     bg_idx = bg_idx + 1;
+  elseif (numel(bg_cluster_id) > 10) % a small area of bg is likely something important, i.e. fg
+    % add polygon to fg_polygons
+    K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
+    pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
+    polygons = [polygons; pgon];
+
+    % add points to fg_cluster_points matrix
+    index = poly_idx*ones(numel(bg_cluster_id), 1);
+    % num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix((bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
+    num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
+    poly_idx = poly_idx + 1;
   end
 end
 % plot(bg_polygons);
 
-% store polygons (convex hull shapes)
-% figure(); imshow(img); hold on;
-polygons = [];
-
-% store the points inside each polygon
-num_cluster_points = [];
-
-% used to keep track of which cluster points are in which polygon
-poly_idx = 1;
 for i = 1:num_clusters
   found_bg_clust = false;
   cluster_id = find(T==i);
+  numel(cluster_id);
 % mask = zeros(size(img));
 % cluster_id = find(T==10);
   clust_col = rand(1,3);
@@ -210,21 +227,23 @@ for i = 1:num_clusters
     % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
     % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
 
-    for j = 1:bg_num_clusters
-      bg_clust_idx = find(bg_T == j);
+    for j = 1:bg_idx
+      bg_clust_idx = (bg_cluster_points(:,1) == j);
 
       % calculate colour and positional differences between current fg_cluster
       % and all bg_clusters
       % if they're very close, assume current fg_cluster is actually part of background
-      col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-      p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+      col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+      % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+      p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+      % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
       if (col_dist < 0.4 && p_dist < 1e05)
         % disp('Similar clusters found');
         % TODO: add fg points to bg points
-        col = rand(1,3);
+        % col = rand(1,3);
         found_bg_clust = true;
-        % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'color', col);
-        % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'color', col);
+        % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+        % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
         break;
       end
     end
@@ -234,12 +253,12 @@ for i = 1:num_clusters
     end
 
     index = poly_idx.*ones(numel(cluster_id), 1);
-    temp = [index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:, 3:6)];
     K = convhull(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2));
     pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,1));
     polygons = [polygons; pgon];
 
-    num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3:6)];
+    % num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3:6)];
+    num_cluster_points = [num_cluster_points; index, pointcloud_matrix(cluster_id,:)];
     poly_idx = poly_idx + 1;
     % num_points = numel(cluster_matrix(:,1))
     % if num_points > point threshold && distance (x,y,z) > something 
@@ -290,7 +309,7 @@ for i = 1:size(r)
   % remove points from cluster that are not part of intersection
   cluster_idx_2( ~any(cluster_idx_2.*inon_2, 2), :) = [];
 
-  % calculate 'depth' of points in intersection from first cluster
+  % calculate 'depth' of points in intersection from second cluster
   average_depth_2 = mean(num_cluster_points(cluster_idx_2, 4));
 
   % remove polygon with fewer cluster points in intersection
