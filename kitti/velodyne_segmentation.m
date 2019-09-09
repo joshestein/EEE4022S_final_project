@@ -281,6 +281,30 @@ if isempty(polygons)
   return
 end
 
+% combine similar polygons (that are stacked directly above one another)
+% TODO: perhaps switch to using activecontour? Or finding _all_ similar pixels (i.e. above original bg pixels)
+for i = 1:poly_idx-1
+  clust_1 = (num_cluster_points(:,1) == i);
+  for j = i+1:poly_idx-1
+    clust_2 = (num_cluster_points(:,1) == j);
+    col_dist = hist_colour_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
+    p_dist = pos_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
+    if (col_dist < 0.3 && p_dist < 4e03)
+      % set clust_2 to be part of clust_1
+      num_cluster_points(clust_2, 1) = i;
+      new_clust = (num_cluster_points(:,1) == i);
+      
+      cluster_matrix = num_cluster_points(new_clust, :);
+
+      K = convhull(num_cluster_points(new_clust, 2), num_cluster_points(new_clust, 3));
+      pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,3));
+
+      polygons(i) = pgon;
+      polygons(j) = [];
+    end
+  end
+end
+
 % remove lower triangular since symmetric
 poly_intersects = triu(overlaps(polygons));
 % remove diagonal elements
