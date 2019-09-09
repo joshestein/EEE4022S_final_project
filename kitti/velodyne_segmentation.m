@@ -1,5 +1,9 @@
+% NOTE:
+% currently, reading velo and transforming to velo_img, but storing both.
+% for efficiency can just use velo_img.
+% Keeping both for security for now.
+% 
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
 
 % keep these global to access from read_velo.m
@@ -7,6 +11,7 @@ global base_dir;
 global img;
 
 base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
+% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
@@ -18,8 +23,8 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 frame     = 397; % 0-based index
-forward_frames = 0;
-backward_frames = 0;
+forward_frames = 1;
+backward_frames = 1;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % load calibration
@@ -76,17 +81,12 @@ for f = frame-backward_frames:frame+forward_frames
   % load velodyne points
   [velo, velo_img] = read_velo(f, P_velo_to_img);
 
-  % find nearest y,z neighbour in base frame (x is depth(forward))
-  nearest_yz = knnsearch(base_velo(:,2:3), velo(:,2:3));
-  % % set depth to be that of nearest neighbour
-  velo(:,1) = base_velo(nearest_yz, 1);
-
   multi_velo_img = [multi_velo_img; velo_img];
   multi_velo = [multi_velo; velo];
 end
 
 colours = jet;
-col_idx = round(64*5./multi_velo(:,1));
+col_idx = round(64*5./multi_velo_img(:,3));
 
 rgb_matrix = zeros(size(multi_velo_img, 1), 3);
 bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
@@ -139,10 +139,10 @@ end
 % matrix to store variables for clustering based on Euclidean distance
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
-pointcloud_matrix = [multi_velo_img col_idx rgb_matrix];
-pointcloud_matrix_lab = [multi_velo_img col_idx ab_matrix];
+pointcloud_matrix = [multi_velo_img rgb_matrix];
+pointcloud_matrix_lab = [multi_velo_img ab_matrix];
 
-bg_pointcloud_matrix = [bg_velo_img bg_col_idx bg_rgb_matrix];
+bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
 
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
@@ -283,9 +283,10 @@ end
 
 % combine similar polygons (that are stacked directly above one another)
 % TODO: perhaps switch to using activecontour? Or finding _all_ similar pixels (i.e. above original bg pixels)
-for i = 1:poly_idx-1
+for i = 1:size(polygons, 1)
   clust_1 = (num_cluster_points(:,1) == i);
-  for j = i+1:poly_idx-1
+  for j = i+1:size(polygons, 1)
+    % TODO: more than one fusion is breaking this
     clust_2 = (num_cluster_points(:,1) == j);
     col_dist = hist_colour_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
     p_dist = pos_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
