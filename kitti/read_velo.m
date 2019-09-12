@@ -38,12 +38,7 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
   % remove very things above a particular height ~ 2m
   % keep in bg_velo
   idx = velo(:,3) > 0.1;
-  bg_velo = zeros(nnz(idx), size(velo, 2));
-  bg_velo(idx, :) = velo(idx,:);
-  % remove empty rows
-  % TODO just setup correctly
-  zero_rows = ~any(bg_velo, 2);
-  bg_velo(zero_rows, :) = [];
+  bg_velo = velo(idx,:);
   velo(idx,:) = [];
 
   % project to image plane (exclude luminance)
