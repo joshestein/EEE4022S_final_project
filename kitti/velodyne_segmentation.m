@@ -43,7 +43,7 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
-lab_img = rgb2lab(img);
+% lab_img = rgb2lab(img);
 fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
 imshow(img); hold on;
 % axis on; grid on;
@@ -90,7 +90,7 @@ col_idx = round(64*5./multi_velo_img(:,3));
 
 rgb_matrix = zeros(size(multi_velo_img, 1), 3);
 bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
-ab_matrix = zeros(size(multi_velo_img, 1), 2);
+% ab_matrix = zeros(size(multi_velo_img, 1), 2);
 rows = round(multi_velo_img(:,2));
 cols = round(multi_velo_img(:,1));
 
@@ -140,7 +140,7 @@ end
 % format:
 % velo_img_x, velo_img_y, depth, r, g, b
 pointcloud_matrix = [multi_velo_img rgb_matrix];
-pointcloud_matrix_lab = [multi_velo_img ab_matrix];
+% pointcloud_matrix_lab = [multi_velo_img ab_matrix];
 
 bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
 
@@ -153,7 +153,7 @@ bg_num_clusters = 15;
 weights = [1; 1; 100; 0; 0; 0];
 bg_weights = [5; 1; 1; 5; 5; 5];
 rgb_weights = [0; 0; 100; 10; 10; 10];
-weights_lab = [10; 5; 100; 1; 1];
+% weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
 Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
@@ -219,7 +219,7 @@ for i = 1:num_clusters
 
   % store indeces and rgb values of each cluster pos
   cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 3:6)];
-  cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
+  % cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
   % plot(cluster_matrix(:,2), cluster_matrix(:,1), 'x', 'color', clust_col);
 
