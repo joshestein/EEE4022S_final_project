@@ -14,6 +14,7 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
 addpath(sdk_dir);
@@ -22,6 +23,7 @@ cam       = 2; % 0-based index
 % frame = 392 for drive 93
 % frame = 329 for drive 09
 % frame = 42 for drive 13
+% frame = 397 for drive 27
 frame     = 397; % 0-based index
 forward_frames = 1;
 backward_frames = 1;
@@ -44,7 +46,7 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
 % lab_img = rgb2lab(img);
-fig = figure('Position',[20 100 size(img,2) size(img,1)]); axes('Position',[0 0 1 1]);
+figure;
 imshow(img); hold on;
 % axis on; grid on;
 
@@ -195,6 +197,14 @@ for i = 1:bg_num_clusters
     % bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
     bg_idx = bg_idx + 1;
   elseif (numel(bg_cluster_id) > 10) % a small area of bg is likely something important, i.e. fg
+    cluster_x_pos = mean(bg_pointcloud_matrix(bg_cluster_id), 1);
+    
+    % ignore if cluster is directly in middle of image
+    % likely to be a gap in velodyne points
+    if ((abs(cluster_x_pos) - size(img, 2)/2) < 20)
+      continue;
+    end
+
     % add polygon to fg_polygons
     K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
     pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
