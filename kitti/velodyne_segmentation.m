@@ -26,7 +26,7 @@ cam       = 2; % 0-based index
 % frame = 397 for drive 27
 frame     = 397; % 0-based index
 forward_frames = 1;
-backward_frames = 1;
+backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % load calibration
@@ -95,17 +95,18 @@ bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
 % ab_matrix = zeros(size(multi_velo_img, 1), 2);
 rows = round(multi_velo_img(:,2));
 cols = round(multi_velo_img(:,1));
-
 % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
 
 for i=1:size(multi_velo_img,1)
   % colours = cols = 64 x 3
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
-  % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  % if (multi_velo_img(i ,3) > 26)
+    % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  % end
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
-  ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
+  % ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
 end
 
 bg_col_idx = round(64*5./bg_velo(:,1));
@@ -117,6 +118,35 @@ bg_rows = round(bg_velo_img(:, 2));
 bg_cols = round(bg_velo_img(:, 1));
 for i = 1:size(bg_velo_img, 1)
   bg_rgb_matrix(i, 1:3) = img(bg_rows(i), bg_cols(i), 1:3);
+end
+
+% keep distant points separate for different handling
+dist_velo_idx = multi_velo_img(:,3) > 28;
+dist_velo_img = multi_velo_img(dist_velo_idx, :);
+dist_rgb_matrix = rgb_matrix(dist_velo_idx, :);
+% remove distant points from multi_velo_img
+multi_velo_img(dist_velo_idx, :) = [];
+rgb_matrix(dist_velo_idx, :) = [];
+
+% for i = 1:size(dist_velo_img, 1)
+%   plot(dist_velo_img(i, 1), dist_velo_img(i, 2), 'x', 'MarkerSize', 10);
+% end
+
+block_size = 16;
+for col = 1:block_size:size(img, 2)
+    % col + block_size = 1 + block points
+    % so we need to subtract one to ensure we are only searching for exactly block number of points.
+    % e.g block size = 16
+    % 1:(1+16) = searching 17 points
+    % So explicitely subtract 1.
+    col_end = col + block_size - 1;
+    for row = 1:block_size:size(img, 1)
+        row_end = row + block_size - 1;
+        num_points = nnz(dist_velo_img(:,1) > col & dist_velo_img(:,1) < col_end  & dist_velo_img(:,2) > row & dist_velo_img(:,2) < row_end);
+        if (num_points > 20)
+          % rectangle('Position', [col row block_size block_size], 'EdgeColor', 'r');
+        end
+    end
 end
 
 % stores co-ordinates and rgb values of each pixel
@@ -145,14 +175,17 @@ pointcloud_matrix = [multi_velo_img rgb_matrix];
 % pointcloud_matrix_lab = [multi_velo_img ab_matrix];
 
 bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
+dist_pointcloud_matrix = [dist_velo_img dist_rgb_matrix];
 
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
 % where similarity is based on depth, colour, position
-num_clusters = 15;
+num_clusters = 10;
 bg_num_clusters = 15;
+dist_num_clusters = 15;
  
-weights = [1; 1; 100; 0; 0; 0];
+weights = [1; 1; 60; 0; 0; 0]; 
+dist_weights = [0.5; 0.5; 0; 1; 1; 1]; 
 bg_weights = [5; 1; 1; 5; 5; 5];
 rgb_weights = [0; 0; 100; 10; 10; 10];
 % weights_lab = [10; 5; 100; 1; 1];
@@ -165,6 +198,11 @@ T = cluster(Z, 'maxclust', num_clusters);
 bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, bg_weights));
 bg_Z = linkage(bg_Y);
 bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
+
+dist_Y = pdist(double(dist_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, dist_weights));
+dist_Z = linkage(dist_Y);
+dist_T = cluster(dist_Z, 'maxclust', 5);
+
 % T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
 % store polygons (convex hull shapes)
@@ -212,12 +250,32 @@ for i = 1:bg_num_clusters
 
     % add points to fg_cluster_points matrix
     index = poly_idx*ones(numel(bg_cluster_id), 1);
-    % num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix((bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
     num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
     poly_idx = poly_idx + 1;
   end
 end
 % plot(bg_polygons);
+
+% remove distant clusters that are similar to background
+% TODO
+% for i = 1:dist_num_clusters
+%   dist_idx = find(dist_T == i);
+%   for j = 1:size(bg_polygons, 1)
+%     bg_clust_idx = (bg_cluster_points(:,1) == j);
+% 
+%     col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), dist_pointcloud_matrix(dist_idx, :));
+%     if (col_dist < 0.4 )
+%       found_bg_clust = true;
+%       break;
+%     end
+%   end
+% 
+%   % if (found_bg_clust)
+%   %   continue;
+%   % end
+%   col = rand(1,3);
+%   % plot(dist_pointcloud_matrix(dist_idx, 1), dist_pointcloud_matrix(dist_idx, 2), 'x', 'color', col);
+% end
 
 for i = 1:num_clusters
   found_bg_clust = false;
