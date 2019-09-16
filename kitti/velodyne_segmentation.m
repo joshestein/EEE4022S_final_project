@@ -247,7 +247,7 @@ for i = 1:num_clusters
       % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
       p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
       % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-      if (col_dist < 0.4 && p_dist < 1e05)
+      if (col_dist < 0.4 && p_dist < 7e04)
         % disp('Similar clusters found');
         % TODO: add fg points to bg points
         % col = rand(1,3);
