@@ -373,7 +373,19 @@ while (i < numel(r))
   [x_1, y_1] = centroid(polygons(r(i)));
   [x_2, y_2] = centroid(polygons(c(i)));
 
-  % significant same height
+  max_x_1 = max(polygons(r(i)).Vertices(:,1));
+  min_x_1 = max(polygons(r(i)).Vertices(:,1));
+
+  max_x_2 = max(polygons(c(i)).Vertices(:,1));
+  min_x_2 = max(polygons(c(i)).Vertices(:,1));
+
+  % if polygon extends to border of image
+  if (abs(max_x_1 - size(img,2)) < 1 || ...
+      abs(max_x_2 - size(img,2)) < 1 || ...
+      min_x_1 < 1 || ...
+      min_x_2 < 1)
+
+  % and significant same height
   if (abs(y_2 - y_1) < 50)
     if ((x_1 < size(img, 2)/2) && (x_2 < size(img, 2)/2)) % left half image plane
       if (x_1 < x_2)  % first poly is to left of second
@@ -388,7 +400,8 @@ while (i < numel(r))
         polygons(r(i)) = [];
       end
     end
-  else
+    end
+  end
     i = i + 1;
   end
 
