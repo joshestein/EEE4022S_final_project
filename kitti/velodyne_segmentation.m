@@ -24,7 +24,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 397; % 0-based index
+frame     = 53; % 0-based index
 forward_frames = 1;
 backward_frames = 1;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -105,7 +105,7 @@ for i=1:size(multi_velo_img,1)
   % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
-  ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
+  % ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
 end
 
 bg_col_idx = round(64*5./bg_velo(:,1));
@@ -356,10 +356,41 @@ for i = 1:size(r)
 
   % remove polygon further back (keep thing in front)
   if (average_depth > average_depth_2)
-     polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
-  else
      polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
+  else
+     polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
   end
+end
+
+% this removes adjacent polygons, keeping the innermost one
+% the inner most is more likely to be a car, whereas the outermost is more likely to be a wall, bush, etc.
+% working for frame 53, drive 27
+% TODO: test on more images
+i = 1;
+while (i < numel(r))
+  % keep x and y positions to determine of objects are directly next to one another (not a significant change in y)
+  [x_1, y_1] = centroid(polygons(r(i)));
+  [x_2, y_2] = centroid(polygons(c(i)));
+
+  % significant same height
+  if (abs(y_2 - y_1) < 50)
+    if ((x_1 < size(img, 2)/2) && (x_2 < size(img, 2)/2)) % left half image plane
+      if (x_1 < x_2)  % first poly is to left of second
+        polygons(r(i)) = []; % remove first poly
+  else
+        polygons(c(i)) = [];
+      end
+    elseif ((x_1 > size(img, 2)/2) && (x_2 > size(img, 2)/2)) % right half image plane
+      if (x_1 < x_2)
+        polygons(c(i)) = [];
+      else
+        polygons(r(i)) = [];
+      end
+  end
+  else
+    i = i + 1;
+end
+
 end
 
 plot(polygons);
