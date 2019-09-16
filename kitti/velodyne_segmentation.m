@@ -25,8 +25,8 @@ cam       = 2; % 0-based index
 % frame = 42 for drive 13
 % frame = 397 for drive 27
 frame     = 53; % 0-based index
-forward_frames = 1;
-backward_frames = 1;
+forward_frames = 0;
+backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % load calibration
@@ -386,25 +386,23 @@ while (i < numel(r))
       min_x_2 < 1)
 
   % and significant same height
-  if (abs(y_2 - y_1) < 50)
-    if ((x_1 < size(img, 2)/2) && (x_2 < size(img, 2)/2)) % left half image plane
-      if (x_1 < x_2)  % first poly is to left of second
-        polygons(r(i)) = []; % remove first poly
-      else
-        polygons(c(i)) = [];
-      end
-    elseif ((x_1 > size(img, 2)/2) && (x_2 > size(img, 2)/2)) % right half image plane
-      if (x_1 < x_2)
-        polygons(c(i)) = [];
-      else
-        polygons(r(i)) = [];
+    if (abs(y_2 - y_1) < 50)
+      if ((x_1 < size(img, 2)/2) && (x_2 < size(img, 2)/2)) % left half image plane
+        if (x_1 < x_2)  % first poly is to left of second
+          polygons(r(i)) = []; % remove first poly
+        else
+          polygons(c(i)) = [];
+        end
+      elseif ((x_1 > size(img, 2)/2) && (x_2 > size(img, 2)/2)) % right half image plane
+        if (x_1 < x_2)
+          polygons(c(i)) = [];
+        else
+          polygons(r(i)) = [];
+        end
       end
     end
-    end
   end
-    i = i + 1;
-  end
-
+  i = i + 1;
 end
 
 plot(polygons);
