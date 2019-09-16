@@ -210,11 +210,12 @@ bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, bg_wei
 bg_Z = linkage(bg_Y);
 bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
 
+dist_cluster_points = [];
+if (forward_frames ~= 0)
 dist_Y = pdist(double(dist_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, dist_weights));
 dist_Z = linkage(dist_Y);
 dist_T = cluster(dist_Z, 'maxclust', dist_num_clusters);
 
-dist_cluster_points = [];
 dist_idx = 1;
 for i = 1:dist_num_clusters
   clust_id = (dist_T == i);
@@ -227,6 +228,7 @@ for i = 1:dist_num_clusters
 end
 
 % combine distant clusters directly above one another
+  if (~isempty(dist_cluster_points))
 for i = 1:dist_idx
   clust_1 = (dist_cluster_points(:,1) == i);
   x_1 = mean(dist_cluster_points(clust_1, 2));
@@ -240,6 +242,8 @@ for i = 1:dist_idx
       dist_cluster_points(clust_2, 1) = i;
       % TODO: decrement subsequent dist_cluster_idx
     end
+  end
+end
   end
 end
 
@@ -382,6 +386,9 @@ for i = 1:num_clusters
   end
 end
 
+if (isempty(dist_cluster_points))
+  % do nothing
+else
 for i = 1:dist_idx
   cluster_id = (dist_cluster_points(:, 1) == i);
   if (nnz(cluster_id) == 0)
@@ -398,6 +405,7 @@ for i = 1:dist_idx
   pgon = polyshape(clust(K, 2), clust(K, 3));
   polygons = [polygons; pgon];
   poly_idx = poly_idx + 1;
+end
 end
 
 % no polygons found
