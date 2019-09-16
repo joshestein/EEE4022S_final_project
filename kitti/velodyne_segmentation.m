@@ -384,11 +384,18 @@ end
 
 for i = 1:dist_idx
   cluster_id = (dist_cluster_points(:, 1) == i);
+  if (nnz(cluster_id) == 0)
+    continue;
+  end
   index = poly_idx.*ones(nnz(cluster_id), 1);
   % dist_cluster_points(:,1) = poly_idx;
   num_cluster_points = [num_cluster_points; index dist_cluster_points(cluster_id, 2:7)];
   K = convhull(dist_cluster_points(cluster_id, 2), dist_cluster_points(cluster_id, 3));
-  pgon = polyshape(dist_cluster_points(K, 2), dist_cluster_points(K, 3));
+  % only using this for the indexing
+  % need to find a way to do dist_cluster_points(cluster_id)(K)
+  % that is, K of dist_cluster_points(cluster_id)
+  clust = dist_cluster_points(cluster_id, :);
+  pgon = polyshape(clust(K, 2), clust(K, 3));
   polygons = [polygons; pgon];
   poly_idx = poly_idx + 1;
 end
