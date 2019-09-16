@@ -316,6 +316,7 @@ for i = 1:size(polygons, 1)
   end
 end
 
+
 % remove lower triangular since symmetric
 poly_intersects = triu(overlaps(polygons));
 % remove diagonal elements
@@ -377,7 +378,7 @@ while (i < numel(r))
     if ((x_1 < size(img, 2)/2) && (x_2 < size(img, 2)/2)) % left half image plane
       if (x_1 < x_2)  % first poly is to left of second
         polygons(r(i)) = []; % remove first poly
-  else
+      else
         polygons(c(i)) = [];
       end
     elseif ((x_1 > size(img, 2)/2) && (x_2 > size(img, 2)/2)) % right half image plane
@@ -386,10 +387,10 @@ while (i < numel(r))
       else
         polygons(r(i)) = [];
       end
-  end
+    end
   else
     i = i + 1;
-end
+  end
 
 end
 
@@ -520,6 +521,14 @@ function [success, intra_clusts] = multi_intra_clust(clust)
   % could try re-running heirarchical clustering based purely on r,g,b and x,y
   % could try building histograms and finding distinct valleys
   % could try segmenting via Lab with a set number of clusters
+
+  % colour_weights = [1; 1; 0; 1; 1; 1];
+  % % convert from RGB to Lab
+  % clust(:,4:6) = rgb2lab(clust(:, 4:6));
+  % Y = pdist(double(clust), @(XI, XJ) weighted_euc(XI, XJ, colour_weights));
+  % Z = linkage(Y);
+  % dendrogram(Z);
+  % T = cluster(Z, 'maxclust', 4);
 
   r = clust(:, 4);
   g = clust(:, 5);
