@@ -212,38 +212,38 @@ bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
 
 dist_cluster_points = [];
 if (forward_frames ~= 0)
-dist_Y = pdist(double(dist_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, dist_weights));
-dist_Z = linkage(dist_Y);
-dist_T = cluster(dist_Z, 'maxclust', dist_num_clusters);
+  dist_Y = pdist(double(dist_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, dist_weights));
+  dist_Z = linkage(dist_Y);
+  dist_T = cluster(dist_Z, 'maxclust', dist_num_clusters);
 
-dist_idx = 1;
-for i = 1:dist_num_clusters
-  clust_id = (dist_T == i);
-  if (nnz(clust_id) > 30)
-    index = dist_idx.*ones(nnz(clust_id), 1);
-    dist_cluster_points = [dist_cluster_points; index, dist_pointcloud_matrix(clust_id, :)];
-    dist_idx = dist_idx + 1;
-    % plot(dist_pointcloud_matrix(clust_id, 1), dist_pointcloud_matrix(clust_id, 2), 'x');
-  end
-end
-
-% combine distant clusters directly above one another
-  if (~isempty(dist_cluster_points))
-for i = 1:dist_idx
-  clust_1 = (dist_cluster_points(:,1) == i);
-  x_1 = mean(dist_cluster_points(clust_1, 2));
-  xrange_1 = range(dist_cluster_points(clust_1, 2));
-  for j = i+1:dist_idx
-    clust_2 = (dist_cluster_points(:,1) == j);
-    x_2 = mean(dist_cluster_points(clust_2, 2));
-    xrange_2 = range(dist_cluster_points(clust_2, 2));
-
-    if (abs(x_2 - x_1) < 5 && abs(xrange_2 - xrange_1) < 20)
-      dist_cluster_points(clust_2, 1) = i;
-      % TODO: decrement subsequent dist_cluster_idx
+  dist_idx = 1;
+  for i = 1:dist_num_clusters
+    clust_id = (dist_T == i);
+    if (nnz(clust_id) > 30)
+      index = dist_idx.*ones(nnz(clust_id), 1);
+      dist_cluster_points = [dist_cluster_points; index, dist_pointcloud_matrix(clust_id, :)];
+      dist_idx = dist_idx + 1;
+      % plot(dist_pointcloud_matrix(clust_id, 1), dist_pointcloud_matrix(clust_id, 2), 'x');
     end
   end
-end
+
+  % combine distant clusters directly above one another
+  if (~isempty(dist_cluster_points))
+    for i = 1:dist_idx
+      clust_1 = (dist_cluster_points(:,1) == i);
+      x_1 = mean(dist_cluster_points(clust_1, 2));
+      xrange_1 = range(dist_cluster_points(clust_1, 2));
+      for j = i+1:dist_idx
+        clust_2 = (dist_cluster_points(:,1) == j);
+        x_2 = mean(dist_cluster_points(clust_2, 2));
+        xrange_2 = range(dist_cluster_points(clust_2, 2));
+
+        if (abs(x_2 - x_1) < 5 && abs(xrange_2 - xrange_1) < 20)
+          dist_cluster_points(clust_2, 1) = i;
+          % TODO: decrement subsequent dist_cluster_idx
+        end
+      end
+    end
   end
 end
 
@@ -389,23 +389,23 @@ end
 if (isempty(dist_cluster_points))
   % do nothing
 else
-for i = 1:dist_idx
-  cluster_id = (dist_cluster_points(:, 1) == i);
-  if (nnz(cluster_id) == 0)
-    continue;
+  for i = 1:dist_idx
+    cluster_id = (dist_cluster_points(:, 1) == i);
+    if (nnz(cluster_id) == 0)
+      continue;
+    end
+    index = poly_idx.*ones(nnz(cluster_id), 1);
+    % dist_cluster_points(:,1) = poly_idx;
+    num_cluster_points = [num_cluster_points; index dist_cluster_points(cluster_id, 2:7)];
+    K = convhull(dist_cluster_points(cluster_id, 2), dist_cluster_points(cluster_id, 3));
+    % only using this for the indexing
+    % need to find a way to do dist_cluster_points(cluster_id)(K)
+    % that is, K of dist_cluster_points(cluster_id)
+    clust = dist_cluster_points(cluster_id, :);
+    pgon = polyshape(clust(K, 2), clust(K, 3));
+    polygons = [polygons; pgon];
+    poly_idx = poly_idx + 1;
   end
-  index = poly_idx.*ones(nnz(cluster_id), 1);
-  % dist_cluster_points(:,1) = poly_idx;
-  num_cluster_points = [num_cluster_points; index dist_cluster_points(cluster_id, 2:7)];
-  K = convhull(dist_cluster_points(cluster_id, 2), dist_cluster_points(cluster_id, 3));
-  % only using this for the indexing
-  % need to find a way to do dist_cluster_points(cluster_id)(K)
-  % that is, K of dist_cluster_points(cluster_id)
-  clust = dist_cluster_points(cluster_id, :);
-  pgon = polyshape(clust(K, 2), clust(K, 3));
-  polygons = [polygons; pgon];
-  poly_idx = poly_idx + 1;
-end
 end
 
 % no polygons found
