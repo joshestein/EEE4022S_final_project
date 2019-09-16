@@ -24,13 +24,8 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-<<<<<<< HEAD
 frame     = 53; % 0-based index
 forward_frames = 0;
-=======
-frame     = 397; % 0-based index
-forward_frames = 1;
->>>>>>> distant_points
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
