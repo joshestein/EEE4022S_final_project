@@ -24,7 +24,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 53; % 0-based index
+frame     = 160; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -496,6 +496,18 @@ while (i < numel(r))
   % keep x and y positions to determine of objects are directly next to one another (not a significant change in y)
   [x_1, y_1] = centroid(polygons(r(i)));
   [x_2, y_2] = centroid(polygons(c(i)));
+  
+  if (isnan(x_1) || isnan(y_1))
+    polygons(r(i)) = [];
+    i = i + 1;
+    continue;
+  end
+
+  if (isnan(x_2) || isnan(y_2))
+    polygons(c(i)) = [];
+    i = i + 1;
+    continue;
+  end
 
   max_x_1 = max(polygons(r(i)).Vertices(:,1));
   min_x_1 = max(polygons(r(i)).Vertices(:,1));
