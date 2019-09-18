@@ -24,7 +24,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 210; % 0-based index
+frame     = 245; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -434,9 +434,12 @@ end
 
 % combine similar polygons (that are stacked directly above one another)
 % TODO: perhaps switch to using activecontour? Or finding _all_ similar pixels (i.e. above original bg pixels)
-for i = 1:size(polygons, 1)
+m = size(polygons, 1);
+i = 1;
+while (i < m)
   clust_1 = (num_cluster_points(:,1) == i);
-  for j = i+1:size(polygons, 1)
+  j = i + 1;
+  while (j < m)
     % TODO: more than one fusion is breaking this
     clust_2 = (num_cluster_points(:,1) == j);
     col_dist = hist_colour_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
@@ -453,8 +456,11 @@ for i = 1:size(polygons, 1)
 
       polygons(i) = pgon;
       polygons(j) = [];
+      m = m - 1;
     end
+    j = j + 1;
   end
+  i = i + 1;
 end
 
 
