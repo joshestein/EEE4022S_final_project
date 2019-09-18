@@ -24,7 +24,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 160; % 0-based index
+frame     = 210; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -208,7 +208,7 @@ num_clusters = 10;
 bg_num_clusters = 15;
 dist_num_clusters = 5;
  
-weights = [1; 1; 1000; 0; 0; 0]; 
+weights = [1.5; 1.5; 1000; 0; 0; 0]; 
 dist_weights = [1; 1; 0; 0; 0; 0]; 
 bg_weights = [5; 1; 1; 5; 5; 5];
 rgb_weights = [0; 0; 100; 10; 10; 10];
@@ -505,10 +505,16 @@ end
 % working for frame 53, drive 27
 % TODO: test on more images
 i = 1;
-while (i < numel(r))
+while (i <= numel(r))
+    disp(i)
   % keep x and y positions to determine of objects are directly next to one another (not a significant change in y)
-  [x_1, y_1] = centroid(polygons(r(i)));
-  [x_2, y_2] = centroid(polygons(c(i)));
+  try
+    [x_1, y_1] = centroid(polygons(r(i)));
+    [x_2, y_2] = centroid(polygons(c(i)));
+  catch
+    i = i + 1;
+    continue;
+  end
   
   if (isnan(x_1) || isnan(y_1))
     polygons(r(i)) = [];
@@ -523,10 +529,10 @@ while (i < numel(r))
   end
 
   max_x_1 = max(polygons(r(i)).Vertices(:,1));
-  min_x_1 = max(polygons(r(i)).Vertices(:,1));
+  min_x_1 = min(polygons(r(i)).Vertices(:,1));
 
   max_x_2 = max(polygons(c(i)).Vertices(:,1));
-  min_x_2 = max(polygons(c(i)).Vertices(:,1));
+  min_x_2 = min(polygons(c(i)).Vertices(:,1));
 
   % if polygon extends to border of image
   if (abs(max_x_1 - size(img,2)) < 1 || ...
