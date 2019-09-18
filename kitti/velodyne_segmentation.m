@@ -29,6 +29,19 @@ forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
+% Odometry sequences:
+% 00: 2011_10_03_drive_0027 000000 004540
+% 01: 2011_10_03_drive_0042 000000 001100
+% 02: 2011_10_03_drive_0034 000000 004660
+% 03: 2011_09_26_drive_0067 000000 000800
+% 04: 2011_09_30_drive_0016 000000 000270
+% 05: 2011_09_30_drive_0018 000000 002760
+% 06: 2011_09_30_drive_0020 000000 001100
+% 07: 2011_09_30_drive_0027 000000 001100
+% 08: 2011_09_30_drive_0028 001100 005170
+% 09: 2011_09_30_drive_0033 000000 001590
+% 10: 2011_09_30_drive_0034 000000 001200
+
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
 Tr_velo_to_cam = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'));
@@ -88,7 +101,7 @@ for f = frame-backward_frames:frame+forward_frames
 end
 
 colours = jet;
-col_idx = round(64*5./multi_velo_img(:,3));
+col_idx = round(64*min(multi_velo_img(:,3))./multi_velo_img(:,3));
 
 rgb_matrix = zeros(size(multi_velo_img, 1), 3);
 bg_rgb_matrix = zeros(size(bg_velo_img, 1), 3);
@@ -195,7 +208,7 @@ num_clusters = 10;
 bg_num_clusters = 15;
 dist_num_clusters = 5;
  
-weights = [1; 1; 60; 0; 0; 0]; 
+weights = [1; 1; 1000; 0; 0; 0]; 
 dist_weights = [1; 1; 0; 0; 0; 0]; 
 bg_weights = [5; 1; 1; 5; 5; 5];
 rgb_weights = [0; 0; 100; 10; 10; 10];
