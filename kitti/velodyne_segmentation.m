@@ -43,6 +43,10 @@ odo_sequence = 7; % ground-truth odometry poses for this sequence
 % 09: 2011_09_30_drive_0033 000000 001590
 % 10: 2011_09_30_drive_0034 000000 001200
 
+num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
+% subtract '.' and '..'
+num_files = size(num_files, 1) - 2;
+
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
 Tr_velo_to_cam = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'));
@@ -84,8 +88,12 @@ multi_velo = base_velo;
 
 % get velo points from multiple frames
 for f = frame-backward_frames:frame+forward_frames
-  if (frame - backward_frames < 1)
+  if (f < 1)
     continue
+  end
+
+  if (f > num_files)
+    break;
   end
 
   if (f == frame)
