@@ -24,9 +24,10 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 445; % 0-based index
-forward_frames = 0;
-backward_frames = 0;
+frame     = 440; % 0-based index
+forward_frames = 1;
+backward_frames = 1;
+num_frames = forward_frames + backward_frames + 1;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
@@ -83,6 +84,10 @@ multi_velo = base_velo;
 
 % get velo points from multiple frames
 for f = frame-backward_frames:frame+forward_frames
+  if (frame - backward_frames < 1)
+    continue
+  end
+
   if (f == frame)
     continue
   end
@@ -153,8 +158,8 @@ for i = 1:16:cols
   % if (dist_velo_img(:,1) > i && dist_velo_img(:,2) < i+10)
   points = nnz(dist_idx);
   sparse_velo_points = nnz(velo_idx);
-  if (sparse_velo_points < 15)
-    % plot(multi_velo_img(velo_idx, 1), multi_velo_img(velo_idx, 2), 'x', 'MarkerSize', 6);
+  if (sparse_velo_points < 15*num_frames)
+    plot(multi_velo_img(velo_idx, 1), multi_velo_img(velo_idx, 2), 'x', 'MarkerSize', 6);
     multi_velo_img(velo_idx, :) = [];
     rgb_matrix(velo_idx, :) = [];
   end
