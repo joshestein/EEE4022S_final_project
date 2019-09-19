@@ -24,10 +24,10 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 440; % 0-based index
-forward_frames = 1;
-backward_frames = 1;
-num_frames = forward_frames + backward_frames + 1;
+frame     = 1105; % 0-based index
+forward_frames = 3;
+backward_frames = 0;
+num_frames = 1;   % incremented when reading velo data, in case frames extend pass file poundaries.
 odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
@@ -89,10 +89,10 @@ multi_velo = base_velo;
 % get velo points from multiple frames
 for f = frame-backward_frames:frame+forward_frames
   if (f < 1)
-    continue
+    continue;
   end
 
-  if (f > num_files)
+  if (f > num_files - 1)
     break;
   end
 
@@ -111,6 +111,8 @@ for f = frame-backward_frames:frame+forward_frames
 
   multi_velo_img = [multi_velo_img; velo_img];
   multi_velo = [multi_velo; velo];
+  
+  num_frames = num_frames + 1;
 end
 
 colours = jet;
