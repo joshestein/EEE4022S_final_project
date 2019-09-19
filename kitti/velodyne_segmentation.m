@@ -24,7 +24,7 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 245; % 0-based index
+frame     = 445; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -145,11 +145,19 @@ rgb_matrix(dist_velo_idx, :) = [];
 %   plot(dist_velo_img(i, 1), dist_velo_img(i, 2), 'x', 'MarkerSize', 10);
 % end
 
+% remove sparse points from dist and mult_velo matrices
 [rows, cols, channels] = size(img);
 for i = 1:16:cols 
   dist_idx = dist_velo_img(:,1) > i & dist_velo_img(:,1) < i+16;
+  velo_idx = multi_velo_img(:,1) > i & multi_velo_img(:,1) < i+16;
   % if (dist_velo_img(:,1) > i && dist_velo_img(:,2) < i+10)
   points = nnz(dist_idx);
+  sparse_velo_points = nnz(velo_idx);
+  if (sparse_velo_points < 15)
+    % plot(multi_velo_img(velo_idx, 1), multi_velo_img(velo_idx, 2), 'x', 'MarkerSize', 6);
+    multi_velo_img(velo_idx, :) = [];
+    rgb_matrix(velo_idx, :) = [];
+  end
   if (points < 30)
     dist_velo_img(dist_idx, :) = [];
     dist_rgb_matrix(dist_idx, :) = [];
