@@ -219,7 +219,6 @@ dist_num_clusters = 5;
 weights = [1.5; 1.5; 1000; 0; 0; 0]; 
 dist_weights = [1; 1; 0; 0; 0; 0]; 
 bg_weights = [5; 1; 1; 5; 5; 5];
-rgb_weights = [0; 0; 100; 10; 10; 10];
 % weights_lab = [10; 5; 100; 1; 1];
 weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
@@ -267,8 +266,6 @@ if (forward_frames ~= 0)
     end
   end
 end
-
-% T = cluster(Z, 'cutoff', 1.5, 'Depth', 20);
 
 % store polygons (convex hull shapes)
 % figure(); imshow(img); hold on;
@@ -362,7 +359,6 @@ for i = 1:num_clusters
 
     for j = 1:bg_idx
       bg_clust_idx = (bg_cluster_points(:,1) == j);
-      nnz(bg_clust_idx)
       if (nnz(bg_clust_idx) < 15)
         continue;
       end
@@ -377,10 +373,10 @@ for i = 1:num_clusters
       if (col_dist < 0.4 && p_dist < 7e04)
         % disp('Similar clusters found');
         % TODO: add fg points to bg points
-        col = rand(1,3);
+        % col = rand(1,3);
         found_bg_clust = true;
-        plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-        plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+        % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+        % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
         break;
       end
     end
@@ -524,7 +520,6 @@ end
 % TODO: test on more images
 i = 1;
 while (i <= numel(r))
-    disp(i)
   % keep x and y positions to determine of objects are directly next to one another (not a significant change in y)
   try
     [x_1, y_1] = centroid(polygons(r(i)));
