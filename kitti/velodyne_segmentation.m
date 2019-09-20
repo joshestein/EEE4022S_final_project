@@ -10,6 +10,10 @@
 global base_dir;
 global img;
 
+file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'w');
+fprintf(file_id, 'Date,Drive,Frame,Run,Time,Polygons\n');
+fclose(file_id);
+
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
 base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
@@ -58,6 +62,7 @@ if isempty(odo_calib)
   disp('Failed to read odometry data');
 end
 
+for frame = 0:5:num_files - 1
 % compute projection matrix velodyne->image plane
 R_cam_to_rect = eye(4);
 R_cam_to_rect(1:3,1:3) = calib.R_rect{1};
@@ -227,6 +232,13 @@ pointcloud_matrix = [multi_velo_img rgb_matrix];
 
 bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
 dist_pointcloud_matrix = [dist_velo_img dist_rgb_matrix];
+
+ min_time = Inf;
+ loop_reps = 5;
+ tic;
+ poly_found = true;
+ 
+ for loop = 1:loop_reps
 
 % this could be made higher, i.e. over-cluster
 % and then merge similar clusters together
@@ -460,8 +472,15 @@ end
 % no polygons found
 % :( :( :(
 if isempty(polygons)
+  file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'a');
+  f_date = base_dir(end - 25:end - 16);
+  f_drive = base_dir(end - 8:end - 5);
+  % 'Date,Drive,Frame,Run,Time,Polygons'
+  fmt = '%s,%s,%d,%d,%f,%d\n';
+  fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, 0);
+  fclose(file_id);
   disp('No objects detected.');
-  return
+  break;
 end
 
 % combine similar polygons (that are stacked directly above one another)
@@ -593,8 +612,22 @@ while (i <= numel(r))
   end
   i = i + 1;
 end
+t_elapsed = toc(t_start);
+min_time = min(t_elapsed, min_time);
 
-plot(polygons);
+file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'a');
+f_date = base_dir(end - 25:end - 16);
+f_drive = base_dir(end - 8:end - 5);
+% 'Date,Drive,Frame,Run,Time,Polygons'
+fmt = '%s,%s,%d,%d,%f,%d\n';
+fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(polygons, 1));
+fclose(file_id);
+end
+  average_time = toc / loop_reps;
+  plot(polygons);
+  saveas(fig, sprintf('full_run/drive_42/no_merge/%d.png', frame));
+
+end
 
 
   % for j = 1:numel(cluster_id)
