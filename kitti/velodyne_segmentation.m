@@ -11,7 +11,7 @@ global base_dir;
 global img;
 
 file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'w');
-fprintf(file_id, 'Date,Drive,Frame,Run,Time,Polygons\n');
+fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
 fclose(file_id);
 
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
@@ -31,7 +31,7 @@ cam = 2; % 0-based index
 % frame = 42 for drive 13
 % frame = 397 for drive 27
 frame = 25; % 0-based index
-forward_frames = 3;
+forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
 % odo_sequence = 7; % ground-truth odometry poses for this sequence
@@ -73,7 +73,7 @@ for frame = 0:5:num_files - 1
     % load and display image
     img = imread(sprintf('%s/image_%02d/data/%010d.png', base_dir, cam, frame));
     % lab_img = rgb2lab(img);
-    figure;
+    fig = figure('Visible', 'off');
     imshow(img); hold on;
     % axis on; grid on;
 
@@ -246,9 +246,9 @@ for frame = 0:5:num_files - 1
     min_time = Inf;
     loop_reps = 5;
     tic;
-    poly_found = true;
 
     for loop = 1:loop_reps
+        t_start = tic;
 
         % this could be made higher, i.e. over-cluster
         % and then merge similar clusters together
@@ -421,35 +421,35 @@ for frame = 0:5:num_files - 1
                 % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
                 if (~isempty(bg_Y))
 
-                    for j = 1:bg_idx
-                        bg_clust_idx = (bg_cluster_points(:, 1) == j);
+                    % for j = 1:bg_idx
+                    %     bg_clust_idx = (bg_cluster_points(:, 1) == j);
 
-                        if (nnz(bg_clust_idx) < 15)
-                            continue;
-                        end
+                    %     if (nnz(bg_clust_idx) < 15)
+                    %         continue;
+                    %     end
 
-                        % calculate colour and positional differences between current fg_cluster
-                        % and all bg_clusters
-                        % if they're very close, assume current fg_cluster is actually part of background
-                        col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                        % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                        p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                        % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                        if (col_dist < 0.4 && p_dist < 7e04)
-                            % disp('Similar clusters found');
-                            % TODO: add fg points to bg points
-                            % col = rand(1,3);
-                            found_bg_clust = true;
-                            % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-                            % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
-                            break;
-                        end
+                    %     % calculate colour and positional differences between current fg_cluster
+                    %     % and all bg_clusters
+                    %     % if they're very close, assume current fg_cluster is actually part of background
+                    %     col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                    %     % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                    %     p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                    %     % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                    %     if (col_dist < 0.4 && p_dist < 7e04)
+                    %         % disp('Similar clusters found');
+                    %         % TODO: add fg points to bg points
+                    %         % col = rand(1,3);
+                    %         found_bg_clust = true;
+                    %         % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+                    %         % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+                    %         break;
+                    %     end
 
-                    end
+                    % end
 
-                    if (found_bg_clust)
-                        % continue;
-                    end
+                    % if (found_bg_clust)
+                    %     % continue;
+                    % end
 
                 end
 
@@ -508,9 +508,9 @@ for frame = 0:5:num_files - 1
             file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'a');
             f_date = base_dir(end - 25:end - 16);
             f_drive = base_dir(end - 8:end - 5);
-            % 'Date,Drive,Frame,Run,Time,Polygons'
-            fmt = '%s,%s,%d,%d,%f,%d\n';
-            fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, 0);
+            % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
+            fmt = '%s,%s,%d,%d,%f,%d,%d\n';
+            fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), 0);
             fclose(file_id);
             disp('No objects detected.');
             break;
@@ -667,9 +667,9 @@ for frame = 0:5:num_files - 1
         file_id = fopen('full_run/drive_42/no_merge/timing.txt', 'a');
         f_date = base_dir(end - 25:end - 16);
         f_drive = base_dir(end - 8:end - 5);
-        % 'Date,Drive,Frame,Run,Time,Polygons'
-        fmt = '%s,%s,%d,%d,%f,%d\n';
-        fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(polygons, 1));
+        % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
+        fmt = '%s,%s,%d,%d,%f,%d,%d\n';
+        fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), size(polygons, 1));
         fclose(file_id);
     end
 
