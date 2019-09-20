@@ -246,8 +246,13 @@ Z = linkage(Y);
 T = cluster(Z, 'maxclust', num_clusters);
 
 bg_Y = pdist(double(bg_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, bg_weights));
-bg_Z = linkage(bg_Y);
-bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
+if (isempty(bg_Y))
+  bg_Z = [];
+  bg_T = [];
+else
+  bg_Z = linkage(bg_Y);
+  bg_T = cluster(bg_Z, 'maxclust', bg_num_clusters);
+end
 
 dist_cluster_points = [];
 if (forward_frames ~= 0)
@@ -301,38 +306,40 @@ bg_cluster_points = [];
 poly_idx = 1;
 bg_idx = 1;
 
-for i = 1:bg_num_clusters
-  bg_cluster_id = find(bg_T == i);
-  bg_cluster_matrix = [bg_pointcloud_matrix(bg_cluster_id, 2), bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 3:6)];
-  % clust_col = rand(1,3);
-  % plot(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2), 'x', 'color', clust_col);
-  if (numel(bg_cluster_id) > 30)
-    K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
-    pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
-    bg_polygons = [bg_polygons; pgon];
+if (~isempty(bg_Y))
+  for i = 1:bg_num_clusters
+    bg_cluster_id = find(bg_T == i);
+    bg_cluster_matrix = [bg_pointcloud_matrix(bg_cluster_id, 2), bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 3:6)];
+    % clust_col = rand(1,3);
+    % plot(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2), 'x', 'color', clust_col);
+    if (numel(bg_cluster_id) > 30)
+      K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
+      pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
+      bg_polygons = [bg_polygons; pgon];
 
-    index = bg_idx.*ones(numel(bg_cluster_id), 1);
-    bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
-    % bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
-    bg_idx = bg_idx + 1;
-  elseif (numel(bg_cluster_id) > 10) % a small area of bg is likely something important, i.e. fg
-    cluster_x_pos = mean(bg_pointcloud_matrix(bg_cluster_id), 1);
-    
-    % ignore if cluster is directly in middle of image
-    % likely to be a gap in velodyne points
-    if ((abs(cluster_x_pos) - size(img, 2)/2) < 20)
-      continue;
+      index = bg_idx.*ones(numel(bg_cluster_id), 1);
+      bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
+      % bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
+      bg_idx = bg_idx + 1;
+    elseif (numel(bg_cluster_id) > 10) % a small area of bg is likely something important, i.e. fg
+      cluster_x_pos = mean(bg_pointcloud_matrix(bg_cluster_id), 1);
+      
+      % ignore if cluster is directly in middle of image
+      % likely to be a gap in velodyne points
+      if ((abs(cluster_x_pos) - size(img, 2)/2) < 20)
+        continue;
+      end
+
+      % add polygon to fg_polygons
+      K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
+      pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
+      polygons = [polygons; pgon];
+
+      % add points to fg_cluster_points matrix
+      index = poly_idx*ones(numel(bg_cluster_id), 1);
+      num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
+      poly_idx = poly_idx + 1;
     end
-
-    % add polygon to fg_polygons
-    K = convhull(bg_pointcloud_matrix(bg_cluster_id, 1), bg_pointcloud_matrix(bg_cluster_id, 2));
-    pgon = polyshape(bg_cluster_matrix(K, 2), bg_cluster_matrix(K,1));
-    polygons = [polygons; pgon];
-
-    % add points to fg_cluster_points matrix
-    index = poly_idx*ones(numel(bg_cluster_id), 1);
-    num_cluster_points = [num_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,:)];
-    poly_idx = poly_idx + 1;
   end
 end
 % plot(bg_polygons);
@@ -375,33 +382,35 @@ for i = 1:num_clusters
   if (numel(cluster_id) > 30)
     % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
     % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
+    if (~isempty(bg_Y))
 
-    for j = 1:bg_idx
-      bg_clust_idx = (bg_cluster_points(:,1) == j);
-      if (nnz(bg_clust_idx) < 15)
-        continue;
+      for j = 1:bg_idx
+        bg_clust_idx = (bg_cluster_points(:,1) == j);
+        if (nnz(bg_clust_idx) < 15)
+          continue;
+        end
+
+        % calculate colour and positional differences between current fg_cluster
+        % and all bg_clusters
+        % if they're very close, assume current fg_cluster is actually part of background
+        col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+        % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+        p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+        % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+        if (col_dist < 0.4 && p_dist < 7e04)
+          % disp('Similar clusters found');
+          % TODO: add fg points to bg points
+          % col = rand(1,3);
+          found_bg_clust = true;
+          % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+          % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+          break;
+        end
       end
 
-      % calculate colour and positional differences between current fg_cluster
-      % and all bg_clusters
-      % if they're very close, assume current fg_cluster is actually part of background
-      col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-      % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-      p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-      % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-      if (col_dist < 0.4 && p_dist < 7e04)
-        % disp('Similar clusters found');
-        % TODO: add fg points to bg points
-        % col = rand(1,3);
-        found_bg_clust = true;
-        % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-        % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
-        break;
+      if (found_bg_clust)
+      % continue;
       end
-    end
-
-    if (found_bg_clust)
-    % continue;
     end
 
     index = poly_idx.*ones(numel(cluster_id), 1);
