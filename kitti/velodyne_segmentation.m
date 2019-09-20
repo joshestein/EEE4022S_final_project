@@ -133,7 +133,7 @@ for i=1:size(multi_velo_img,1)
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
   % if (multi_velo_img(i ,3) > 26)
-    plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+    % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % end
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
@@ -526,13 +526,6 @@ for i = 1:size(r)
 
   % calculate 'depth' of points in intersection from second cluster
   average_depth_2 = mean(num_cluster_points(cluster_idx_2, 4));
-
-  % remove polygon with fewer cluster points in intersection
-  % if (numel(inon) > numel(inon_2))
-  %   polygons(c(i)) = subtract(polygons(c(i)), polygons(r(i)));
-  % else
-  %   polygons(r(i)) = subtract(polygons(r(i)), polygons(c(i)));
-  % end
 
   % remove polygon further back (keep thing in front)
   if (average_depth > average_depth_2)
