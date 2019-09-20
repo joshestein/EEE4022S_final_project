@@ -133,7 +133,7 @@ for i=1:size(multi_velo_img,1)
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
   % if (multi_velo_img(i ,3) > 26)
-    % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+    plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % end
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
@@ -171,8 +171,9 @@ for i = 1:16:cols
   % if (dist_velo_img(:,1) > i && dist_velo_img(:,2) < i+10)
   points = nnz(dist_idx);
   sparse_velo_points = nnz(velo_idx);
-  if (sparse_velo_points < 15*num_frames)
-    plot(multi_velo_img(velo_idx, 1), multi_velo_img(velo_idx, 2), 'x', 'MarkerSize', 6);
+  % if (sparse_velo_points < 15*num_frames)
+  if (sparse_velo_points < 15)
+    % plot(multi_velo_img(velo_idx, 1), multi_velo_img(velo_idx, 2), 'x', 'MarkerSize', 6);
     multi_velo_img(velo_idx, :) = [];
     rgb_matrix(velo_idx, :) = [];
   end
