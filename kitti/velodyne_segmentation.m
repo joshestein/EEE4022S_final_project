@@ -10,10 +10,12 @@
 global base_dir;
 global img;
 
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync';
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
 
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -24,11 +26,12 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 1105; % 0-based index
+frame     = 25; % 0-based index
 forward_frames = 3;
 backward_frames = 0;
 num_frames = 1;   % incremented when reading velo data, in case frames extend pass file poundaries.
-odo_sequence = 7; % ground-truth odometry poses for this sequence
+% odo_sequence = 7; % ground-truth odometry poses for this sequence
+odo_sequence = 1; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
 % 00: 2011_10_03_drive_0027 000000 004540
