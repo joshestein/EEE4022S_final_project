@@ -675,7 +675,8 @@ for frame = 0:5:num_files - 1
 
     average_time = toc / loop_reps;
     plot(polygons);
-    saveas(fig, sprintf('full_run/drive_42/no_merge/%d.png', frame));
+    F = getframe(gca);
+    imwrite(F.cdata, sprintf('full_run/drive_27/1_f_1_b/no_merge/%d.png', frame));
 
 end
 
