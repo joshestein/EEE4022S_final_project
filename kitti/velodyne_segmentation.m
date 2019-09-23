@@ -2,31 +2,11 @@
 % currently, reading velo and transforming to velo_img, but storing both.
 % for efficiency can just use velo_img.
 % Keeping both for security for now.
-<<<<<<< HEAD
-%
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync';
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync';
-=======
->>>>>>> master
 
 % keep these global to access from read_velo.m
 global base_dir;
 global img;
 
-<<<<<<< HEAD
-file_id = fopen('full_run/drive_27/1_f_1_b/no_merge/timing.txt', 'w');
-fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
-fclose(file_id);
-
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync';
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync';
-
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
-=======
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
@@ -43,7 +23,6 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
->>>>>>> master
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
 addpath(sdk_dir);
