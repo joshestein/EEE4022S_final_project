@@ -282,21 +282,28 @@ for frame = 0:5:num_files - 1
 
         if (forward_frames ~= 0)
             dist_Y = pdist(double(dist_pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, dist_weights));
-            dist_Z = linkage(dist_Y);
-            dist_T = cluster(dist_Z, 'maxclust', dist_num_clusters);
+            if (isempty(dist_Y))
+                dist_Z = [];
+                dist_T = [];
+            else
+                dist_Z = linkage(dist_Y);
+                dist_T = cluster(dist_Z, 'maxclust', dist_num_clusters);
+            end
 
             dist_idx = 1;
+            
+            if (~isempty(dist_Y))
+                for i = 1:dist_num_clusters
+                    clust_id = (dist_T == i);
 
-            for i = 1:dist_num_clusters
-                clust_id = (dist_T == i);
+                    if (nnz(clust_id) > 30)
+                        index = dist_idx .* ones(nnz(clust_id), 1);
+                        dist_cluster_points = [dist_cluster_points; index, dist_pointcloud_matrix(clust_id, :)];
+                        dist_idx = dist_idx + 1;
+                        % plot(dist_pointcloud_matrix(clust_id, 1), dist_pointcloud_matrix(clust_id, 2), 'x');
+                    end
 
-                if (nnz(clust_id) > 30)
-                    index = dist_idx .* ones(nnz(clust_id), 1);
-                    dist_cluster_points = [dist_cluster_points; index, dist_pointcloud_matrix(clust_id, :)];
-                    dist_idx = dist_idx + 1;
-                    % plot(dist_pointcloud_matrix(clust_id, 1), dist_pointcloud_matrix(clust_id, 2), 'x');
                 end
-
             end
 
             % combine distant clusters directly above one another
@@ -420,7 +427,7 @@ for frame = 0:5:num_files - 1
             if (numel(cluster_id) > 30)
                 % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
                 % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
-                if (~isempty(bg_Y))
+                if (~isempty(bg_cluster_points))
 
                     % for j = 1:bg_idx
                     %     bg_clust_idx = (bg_cluster_points(:, 1) == j);
