@@ -63,9 +63,11 @@ if (nargin > 3)
     handles.p = p;
 end
 
-
 % Update handles structure
 guidata(hObject, handles);
+
+set(handles.select, 'State', 'on');
+select_OnCallback(handles.select, eventdata, handles)
 
 % UIWAIT makes interactive wait for user response (see UIRESUME)
 uiwait(handles.figure1);
@@ -146,3 +148,5 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 delete(hObject);
+
+function figure1_WindowKeyPressFcn(hObject, eventData, handles)
