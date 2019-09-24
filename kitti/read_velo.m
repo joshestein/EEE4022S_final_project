@@ -31,8 +31,8 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
   velo(idx,:) = [];
 
   % remove points far in the distance
-  idx = velo(:,1) > 30;
-  velo(idx,:) = [];
+  % idx = velo(:,1) > 30;
+  % velo(idx,:) = [];
 
   % remove points that have a height of ~ 0.2 m
   % thresh of 1 is conservative
