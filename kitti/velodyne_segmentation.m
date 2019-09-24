@@ -7,13 +7,7 @@
 global base_dir;
 global img;
 
-<<<<<<< HEAD
-base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
-=======
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
->>>>>>> master
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
@@ -27,7 +21,6 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-
 save_dir = "full_run/drive_27/no_merge/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
@@ -39,11 +32,7 @@ cam = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-<<<<<<< HEAD
 frame = 25; % 0-based index
-=======
-frame     = 50; % 0-based index
->>>>>>> master
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
@@ -67,9 +56,9 @@ num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
 % subtract '.' and '..'
 num_files = size(num_files, 1) - 2;
 
-% file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'w');
-% fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
-% fclose(file_id);
+file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
+fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
+fclose(file_id);
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir, 'calib_cam_to_cam.txt'));
@@ -529,7 +518,7 @@ for frame = 0:5:num_files - 1
         % no polygons found
         % :( :( :(
         if isempty(polygons)
-            file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'a');
+            file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
             f_date = base_dir(end - 25:end - 16);
             f_drive = base_dir(end - 8:end - 5);
             % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
@@ -688,7 +677,7 @@ for frame = 0:5:num_files - 1
         t_elapsed = toc(t_start);
         min_time = min(t_elapsed, min_time);
 
-        file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'a');
+        file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
         f_date = base_dir(end - 25:end - 16);
         f_drive = base_dir(end - 8:end - 5);
         % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
@@ -700,11 +689,13 @@ for frame = 0:5:num_files - 1
     average_time = toc / loop_reps;
     plot(polygons);
     F = getframe(gca);
-    imwrite(F.cdata, sprintf('full_run/drive_09/no_merge/%d.png', frame));
+    imwrite(F.cdata, sprintf('%s%d.png', save_dir, frame));
 
     mask = zeros(size(img, 1), size(img,2));
     for i = 1:size(polygons)
-      curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
+        x = rmmissing(polygons(i).Vertices(:,1));
+        y = rmmissing(polygons(i).Vertices(:,2));
+      curr_poly_mask = poly2mask(x, y, size(img,1), size(img, 2));
       mask = mask + curr_poly_mask;
     end
 
