@@ -76,8 +76,8 @@ P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 % load and display image
 img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
 % lab_img = rgb2lab(img);
-figure;
-imshow(img); hold on;
+% figure;
+% imshow(img); hold on;
 % axis on; grid on;
 
 [base_velo, base_velo_img, bg_velo] = read_velo(frame, P_velo_to_img);
@@ -603,15 +603,16 @@ while (i <= numel(r))
   i = i + 1;
 end
 
-plot(polygons);
+% plot(polygons);
+polygons = interactive(img, polygons);
 
-mask = zeros(size(img, 1), size(img,2));
-for i = 1:size(polygons)
-  curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
-  mask = mask + curr_poly_mask;
-end
-
-save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
+% mask = zeros(size(img, 1), size(img,2));
+% for i = 1:size(polygons)
+%   curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
+%   mask = mask + curr_poly_mask;
+% end
+% 
+% save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
 
   % for j = 1:numel(cluster_id)
   %   pos = cluster_id(j);
