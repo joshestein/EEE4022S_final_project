@@ -10,8 +10,15 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
   global base_dir;
   global img;
 
-  fid = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,filename),'rb');
-  velo = fread(fid,[4 inf],'single')';
+  [fid, message] = fopen(sprintf('%s/velodyne_points/data/%010d.bin',base_dir,filename),'rb');
+  velo = [];
+  if (fid < 0)
+    error('Failed to read "%s" error "%s"', fid, message);
+    return;
+  else
+    velo = fread(fid,[4 inf],'single')';
+  end
+
   if (isempty(velo))
     disp("Failed to read Velodyne data.");
     return;
