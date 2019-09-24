@@ -7,21 +7,19 @@
 global base_dir;
 global img;
 
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -33,8 +31,8 @@ cam = 2; % 0-based index
 % frame = 42 for drive 13
 % frame = 397 for drive 27
 frame = 25; % 0-based index
-forward_frames = 1;
-backward_frames = 1;
+forward_frames = 0;
+backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
 % odo_sequence = 7; % ground-truth odometry poses for this sequence
 odo_sequence = 1; % ground-truth odometry poses for this sequence
@@ -55,6 +53,10 @@ odo_sequence = 1; % ground-truth odometry poses for this sequence
 num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
 % subtract '.' and '..'
 num_files = size(num_files, 1) - 2;
+
+% file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'w');
+% fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
+% fclose(file_id);
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir, 'calib_cam_to_cam.txt'));
@@ -514,7 +516,7 @@ for frame = 0:5:num_files - 1
         % no polygons found
         % :( :( :(
         if isempty(polygons)
-            file_id = fopen('full_run/drive_27/1_f_1_b/no_merge/timing.txt', 'a');
+            file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'a');
             f_date = base_dir(end - 25:end - 16);
             f_drive = base_dir(end - 8:end - 5);
             % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
@@ -673,7 +675,7 @@ for frame = 0:5:num_files - 1
         t_elapsed = toc(t_start);
         min_time = min(t_elapsed, min_time);
 
-        file_id = fopen('full_run/drive_27/1_f_1_b/no_merge/timing.txt', 'a');
+        file_id = fopen('full_run/drive_09/no_merge/timing.txt', 'a');
         f_date = base_dir(end - 25:end - 16);
         f_drive = base_dir(end - 8:end - 5);
         % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
@@ -685,7 +687,7 @@ for frame = 0:5:num_files - 1
     average_time = toc / loop_reps;
     plot(polygons);
     F = getframe(gca);
-    imwrite(F.cdata, sprintf('full_run/drive_27/1_f_1_b/no_merge/%d.png', frame));
+    imwrite(F.cdata, sprintf('full_run/drive_09/no_merge/%d.png', frame));
 
 end
 
