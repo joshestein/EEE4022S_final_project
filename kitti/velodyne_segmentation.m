@@ -22,6 +22,7 @@ calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
 save_dir = "full_run/drive_27/no_merge/interactive/";
+gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -52,9 +53,10 @@ odo_sequence = 1; % ground-truth odometry poses for this sequence
 % 09: 2011_09_30_drive_0033 000000 001590
 % 10: 2011_09_30_drive_0034 000000 001200
 
-num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
+% num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
+files = dir(gt_dir);
 % subtract '.' and '..'
-num_files = size(num_files, 1) - 2;
+num_files = size(files, 1);
 
 file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
 fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
@@ -69,7 +71,13 @@ if isempty(odo_calib)
     disp('Failed to read odometry data');
 end
 
-for frame = 0:5:num_files - 1
+for file_idx = 1:num_files
+    frame = files(file_idx).name;
+    if (strcmp(frame, '.') || (strcmp(frame,'..')))
+        continue;
+    else
+        frame = str2double(frame(1 : end-4));
+    end
     % compute projection matrix velodyne->image plane
     R_cam_to_rect = eye(4);
     R_cam_to_rect(1:3, 1:3) = calib.R_rect{1};
@@ -249,12 +257,12 @@ for frame = 0:5:num_files - 1
     bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
     dist_pointcloud_matrix = [dist_velo_img dist_rgb_matrix];
 
-    min_time = Inf;
-    loop_reps = 5;
-    tic;
+    % min_time = Inf;
+    % loop_reps = 5;
+    % tic;
 
-    for loop = 1:loop_reps
-        t_start = tic;
+    % for loop = 1:loop_reps
+        % t_start = tic;
 
         % this could be made higher, i.e. over-cluster
         % and then merge similar clusters together
@@ -674,19 +682,19 @@ for frame = 0:5:num_files - 1
             i = i + 1;
         end
 
-        t_elapsed = toc(t_start);
-        min_time = min(t_elapsed, min_time);
+        % t_elapsed = toc(t_start);
+        % min_time = min(t_elapsed, min_time);
 
-        file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
+        % file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
         f_date = base_dir(end - 25:end - 16);
         f_drive = base_dir(end - 8:end - 5);
-        % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
-        fmt = '%s,%s,%d,%d,%f,%d,%d\n';
-        fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), size(polygons, 1));
-        fclose(file_id);
-    end
+        % % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
+        % fmt = '%s,%s,%d,%d,%f,%d,%d\n';
+        % fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), size(polygons, 1));
+        % fclose(file_id);
+    % end
 
-    average_time = toc / loop_reps;
+    % average_time = toc / loop_reps;
     interactive_time = tic;
     polygons = interactive(img, polygons);
     interactive_end = toc(interactive_time);
@@ -702,11 +710,13 @@ for frame = 0:5:num_files - 1
     imwrite(F.cdata, sprintf('%s%d.png', save_dir, frame));
 
     mask = zeros(size(img, 1), size(img,2));
-    for i = 1:size(polygons)
-        x = rmmissing(polygons(i).Vertices(:,1));
-        y = rmmissing(polygons(i).Vertices(:,2));
-      curr_poly_mask = poly2mask(x, y, size(img,1), size(img, 2));
-      mask = mask + curr_poly_mask;
+    if (~isempty(polygons))
+        for i = 1:size(polygons)
+            x = rmmissing(polygons(i).Vertices(:,1));
+            y = rmmissing(polygons(i).Vertices(:,2));
+        curr_poly_mask = poly2mask(x, y, size(img,1), size(img, 2));
+        mask = mask + curr_poly_mask;
+        end
     end
 
     save(sprintf("%s%d_interactive_mask.mat", save_dir, frame), 'mask');
