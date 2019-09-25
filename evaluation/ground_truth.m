@@ -1,7 +1,7 @@
 gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
 base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/RGB/";
-frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/";
-frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/";
+frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/no_merge/";
+frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/no_merge/";
 segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_integration/";
 no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/";
 interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/interactive/";
@@ -27,17 +27,17 @@ for i = 1:num_files
     gt_img = imread(sprintf('%s%06d.png', gt_dir, frame));
     img = imread(sprintf('%s%06d.png', base_dir, frame));
 
-    no_integration_mask = load(sprintf('%s%d_mask.mat', segmentation_dir, frame));
     frame_1_mask = load(sprintf('%s%d_mask.mat', frame_integration_1, frame));
     frame_2_mask = load(sprintf('%s%d_mask.mat', frame_integration_2, frame));
+    no_integration_mask = load(sprintf('%s%d_mask.mat', segmentation_dir, frame));
     no_merge_mask = load(sprintf('%s%d_mask.mat', no_merge_dir, frame));
-    interactive_mask = load(sprintf('%s%d_interactive_mask.mat', interactive, frame));
+    interactive_mask = load(sprintf('%s%d_interactive_mask.mat', interactive_dir, frame));
 
-    no_integration_mask = logical(no_integration_mask.no_integration_mask);
-    frame_1_mask = logical(frame_1_mask.frame_1_mask);
-    frame_2_mask = logical(frame_2_mask.frame_2_mask);
-    no_merge_mask = logical(no_merge_mask.no_merge_mask);
-    interactive_mask = logical(interactive_mask.interactive_mask);
+    frame_1_mask = logical(frame_1_mask.mask);
+    frame_2_mask = logical(frame_2_mask.mask);
+    no_integration_mask = logical(no_integration_mask.mask);
+    no_merge_mask = logical(no_merge_mask.mask);
+    interactive_mask = logical(interactive_mask.mask);
 
     % figure;
 
@@ -50,11 +50,18 @@ for i = 1:num_files
 
     full_mask = car_mask | person_mask;
 
-    no_integration_jaccard(i) = jaccard(full_mask, mask);
     frame_int_jaccard_1(i) = jaccard(full_mask, frame_1_mask);
     frame_int_jaccard_2(i) = jaccard(full_mask, frame_2_mask);
+    no_integration_jaccard(i) = jaccard(full_mask, no_integration_mask);
     no_merge_jaccard(i) = jaccard(full_mask, no_merge_mask);
     interactive_jaccard(i) = jaccard(full_mask, interactive_mask);
+end
+
+jaccards = {frame_int_jaccard_1, frame_int_jaccard_2, no_integration_jaccard, no_merge_jaccard, interactive_jaccard};
+
+for i = 1:size(jaccards, 2)
+    jaccards{i} = rmmissing(jaccards{i});
+    disp(mean(jaccards{i}))
 end
 % masked = bsxfun(@times, gt_img, cast(car_mask,class(gt_img)));
 
