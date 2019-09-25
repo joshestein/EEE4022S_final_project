@@ -21,7 +21,7 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_27/no_merge/";
+save_dir = "full_run/drive_27/no_merge/interactive/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -690,7 +690,14 @@ for frame = 0:5:num_files - 1
     interactive_time = tic;
     polygons = interactive(img, polygons);
     interactive_end = toc(interactive_time);
-    % plot(polygons);
+
+    file_id = fopen(sprintf('%sinteractive_timing.txt', save_dir), 'w');
+    % 'Date,Drive,Frame,Run,Interactive_time,Num_velo_points,Polygons'
+    fmt = '%s,%s,%d,%f\n';
+    fprintf(file_id, fmt, f_date, f_drive, frame, interactive_end);
+    fclose(file_id);
+
+    plot(polygons);
     F = getframe(gca);
     imwrite(F.cdata, sprintf('%s%d.png', save_dir, frame));
 
@@ -702,7 +709,7 @@ for frame = 0:5:num_files - 1
       mask = mask + curr_poly_mask;
     end
 
-    save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
+    save(sprintf("%s%d_interactive_mask.mat", save_dir, frame), 'mask');
 
 end
 
