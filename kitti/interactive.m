@@ -118,6 +118,7 @@ while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
     end
 
     selection = -1;
+    polygons = handles.polys;
 
     % check of selected coordinate is in a polygon
     for i = 1:size(polygons)
@@ -126,8 +127,6 @@ while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
             break;
         end
     end
-
-    polygons = handles.polys;
 
     if (selection ~= -1)
         if (button == 1) % left mouse click
