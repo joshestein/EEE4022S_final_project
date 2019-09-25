@@ -687,7 +687,10 @@ for frame = 0:5:num_files - 1
     end
 
     average_time = toc / loop_reps;
-    plot(polygons);
+    interactive_time = tic;
+    polygons = interactive(img, polygons);
+    interactive_end = toc(interactive_time);
+    % plot(polygons);
     F = getframe(gca);
     imwrite(F.cdata, sprintf('%s%d.png', save_dir, frame));
 
