@@ -104,7 +104,6 @@ function select_OnCallback(hObject, eventdata, handles)
 
 % global for use in vargout (sending data out from GUI)
 global polygons;
-polygons = handles.polys;
 
 while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
     % get x,y cooridnates
@@ -128,8 +127,16 @@ while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
         end
     end
 
+    polygons = handles.polys;
+
     if (selection ~= -1)
-        polygons(i) = [];
+        if (button == 1) % left mouse click
+            % delete selected polygon
+            polygons(selection) = [];
+        elseif(button == 3) % right mouse click
+            % only keep selected polygon
+            polygons = polygons(selection);
+        end
         handles.polys = polygons;
 
         % force a refresh with holdon
