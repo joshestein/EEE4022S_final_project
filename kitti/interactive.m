@@ -22,7 +22,7 @@ function varargout = interactive(varargin)
 
 % Edit the above text to modify the response to help interactive
 
-% Last Modified by GUIDE v2.5 24-Sep-2019 16:58:05
+% Last Modified by GUIDE v2.5 25-Sep-2019 08:53:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -70,7 +70,7 @@ set(handles.select, 'State', 'on');
 select_OnCallback(handles.select, eventdata, handles)
 
 % UIWAIT makes interactive wait for user response (see UIRESUME)
-uiwait(handles.figure1);
+% uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -102,15 +102,24 @@ function select_OnCallback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % set(gcf,'pointer','crosshair');
 
+% global for use in vargout (sending data out from GUI)
+global polygons;
+polygons = handles.polys;
+
 while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
     % get x,y cooridnates
     [x, y, button] = ginput(1);
+    if ((button == 100)) % 'd' key
+        set(handles.select, 'State', 'off')
+        select_OnCallback(handles.select, eventdata, handles)
+        break;
+    elseif(isempty(button)) % 'return' key
+        close(gcf);
+        break;
+    end
 
     selection = -1;
 
-    % global for use in vargout (sending data out from GUI)
-    global polygons;
-    polygons = handles.polys;
     % check of selected coordinate is in a polygon
     for i = 1:size(polygons)
         if (inpolygon(x, y, polygons(i).Vertices(:,1), polygons(i).Vertices(:,2)))
@@ -150,3 +159,19 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 delete(hObject);
 
 function figure1_WindowKeyPressFcn(hObject, eventData, handles)
+
+
+% --- Executes on key press with focus on figure1 and none of its controls.
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+if (eventdata.Key == 'return')
+    delete(hObject);
+elseif (eventdata.Key == 'c')
+    set(handles.select, 'State', 'on')
+end
