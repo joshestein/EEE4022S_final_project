@@ -444,33 +444,33 @@ for file_idx = 1:num_files
                 if (~isempty(bg_cluster_points))
 
                     % for j = 1:bg_idx
-                    %     bg_clust_idx = (bg_cluster_points(:, 1) == j);
+                        % bg_clust_idx = (bg_cluster_points(:, 1) == j);
 
-                    %     if (nnz(bg_clust_idx) < 15)
-                    %         continue;
-                    %     end
+                        % if (nnz(bg_clust_idx) < 15)
+                            % continue;
+                        % end
 
-                    %     % calculate colour and positional differences between current fg_cluster
-                    %     % and all bg_clusters
-                    %     % if they're very close, assume current fg_cluster is actually part of background
-                    %     col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                    %     % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                    %     p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                    %     % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                    %     if (col_dist < 0.4 && p_dist < 7e04)
-                    %         % disp('Similar clusters found');
-                    %         % TODO: add fg points to bg points
-                    %         % col = rand(1,3);
-                    %         found_bg_clust = true;
-                    %         % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-                    %         % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
-                    %         break;
-                    %     end
+                        % % calculate colour and positional differences between current fg_cluster
+                        % % and all bg_clusters
+                        % % if they're very close, assume current fg_cluster is actually part of background
+                        % col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                        % % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                        % p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                        % % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                        % if (col_dist < 0.4 && p_dist < 7e04)
+                            % % disp('Similar clusters found');
+                            % % TODO: add fg points to bg points
+                            % % col = rand(1,3);
+                            % found_bg_clust = true;
+                            % % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+                            % % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+                            % break;
+                        % end
 
                     % end
 
                     % if (found_bg_clust)
-                    %     continue;
+                        % continue;
                     % end
 
                 end
