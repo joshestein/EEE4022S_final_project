@@ -12,9 +12,9 @@ global img;
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
@@ -22,8 +22,8 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/10_03_drive_27/no_integration/";
-gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
+save_dir = "full_run/drive_27/1_f_1_b/no_merge/";
+gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -38,8 +38,7 @@ frame = 25; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
-% odo_sequence = 7; % ground-truth odometry poses for this sequence
-odo_sequence = 1; % ground-truth odometry poses for this sequence
+odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
 % 00: 2011_10_03_drive_0027 000000 004540
@@ -444,33 +443,33 @@ for file_idx = 1:num_files
                 if (~isempty(bg_cluster_points))
 
                     % for j = 1:bg_idx
-                        % bg_clust_idx = (bg_cluster_points(:, 1) == j);
+                    %    bg_clust_idx = (bg_cluster_points(:, 1) == j);
 
-                        % if (nnz(bg_clust_idx) < 15)
-                            % continue;
-                        % end
+                    %    if (nnz(bg_clust_idx) < 15)
+                    %       continue;
+                    %    end
 
-                        % % calculate colour and positional differences between current fg_cluster
-                        % % and all bg_clusters
-                        % % if they're very close, assume current fg_cluster is actually part of background
-                        % col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                        % % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                        % p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                        % % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
-                        % if (col_dist < 0.4 && p_dist < 7e04)
-                            % % disp('Similar clusters found');
-                            % % TODO: add fg points to bg points
-                            % % col = rand(1,3);
-                            % found_bg_clust = true;
-                            % % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-                            % % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
-                            % break;
-                        % end
+                    %    % calculate colour and positional differences between current fg_cluster
+                    %    % and all bg_clusters
+                    %    % if they're very close, assume current fg_cluster is actually part of background
+                    %    col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                    %    % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                    %    p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
+                    %    % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
+                    %    if (col_dist < 0.4 && p_dist < 7e04)
+                    %      % % disp('Similar clusters found');
+                    %      % % TODO: add fg points to bg points
+                    %      % % col = rand(1,3);
+                    %      found_bg_clust = true;
+                    %      % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
+                    %      % % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+                    %      break;
+                    %    end
 
                     % end
 
                     % if (found_bg_clust)
-                        % continue;
+                    %   continue;
                     % end
 
                 end
@@ -527,12 +526,13 @@ for file_idx = 1:num_files
         % no polygons found
         % :( :( :(
         if isempty(polygons)
+            t_elapsed = toc(t_start);
             file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
             f_date = base_dir(end - 25:end - 16);
             f_drive = base_dir(end - 8:end - 5);
             % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
             fmt = '%s,%s,%d,%d,%f,%d,%d\n';
-            fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), 0);
+            fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
             fclose(file_id);
             disp('No objects detected.');
             break;
@@ -691,7 +691,7 @@ for file_idx = 1:num_files
         f_drive = base_dir(end - 8:end - 5);
         % % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
         % fmt = '%s,%s,%d,%d,%f,%d,%d\n';
-        % fprintf(file_id, fmt, f_date, f_drive, frame, loop, t_elapsed, size(multi_velo_img, 1), size(polygons, 1));
+        % fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), size(polygons, 1));
         % fclose(file_id);
     % end
 
