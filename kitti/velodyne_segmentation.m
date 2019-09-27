@@ -57,7 +57,7 @@ num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
 num_files = size(num_files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
-fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
+fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
 fclose(file_id);
 
 % load calibration
