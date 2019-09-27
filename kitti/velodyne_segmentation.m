@@ -12,18 +12,18 @@ global img;
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_27/1_f_1_b/no_merge/";
-gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
+save_dir = "full_run/drive_42/no_integration/";
+gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -38,25 +38,26 @@ frame = 25; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
-odo_sequence = 7; % ground-truth odometry poses for this sequence
+odo_sequence = 1; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
-% 00: 2011_10_03_drive_0027 000000 004540
-% 01: 2011_10_03_drive_0042 000000 001100
-% 02: 2011_10_03_drive_0034 000000 004660
-% 03: 2011_09_26_drive_0067 000000 000800
-% 04: 2011_09_30_drive_0016 000000 000270
-% 05: 2011_09_30_drive_0018 000000 002760
-% 06: 2011_09_30_drive_0020 000000 001100
-% 07: 2011_09_30_drive_0027 000000 001100
-% 08: 2011_09_30_drive_0028 001100 005170
-% 09: 2011_09_30_drive_0033 000000 001590
-% 10: 2011_09_30_drive_0034 000000 001200
+% 00: 2011_10_03_drive_0027 000000 004540 % residential
+% 01: 2011_10_03_drive_0042 000000 001100 % road
+% 02: 2011_10_03_drive_0034 000000 004660 % residential
+% 03: 2011_09_26_drive_0067 000000 000800 % ?
+% 04: 2011_09_30_drive_0016 000000 000270 % road
+% 05: 2011_09_30_drive_0018 000000 002760 % residential
+% 06: 2011_09_30_drive_0020 000000 001100 % residential
+% 07: 2011_09_30_drive_0027 000000 001100 % residential
+% 08: 2011_09_30_drive_0028 001100 005170 % residential
+% 09: 2011_09_30_drive_0033 000000 001590 % residential
+% 10: 2011_09_30_drive_0034 000000 001200 % residential
 
-% num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
-files = dir(gt_dir);
+files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
+gt_files = dir(gt_dir);
 % subtract '.' and '..'
-num_files = size(files, 1);
+num_gt_files = size(files, 1);
+num_files = size(files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
 fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
@@ -71,7 +72,9 @@ if isempty(odo_calib)
     disp('Failed to read odometry data');
 end
 
-for file_idx = 1:num_files
+% for file_idx = 1:num_gt_files
+%     frame = gt_files(file_idx).name;
+for file_idx = 1:5:num_files - 1
     frame = files(file_idx).name;
     if (strcmp(frame, '.') || (strcmp(frame,'..')))
         continue;
@@ -535,7 +538,7 @@ for file_idx = 1:num_files
             fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
             fclose(file_id);
             disp('No objects detected.');
-            break;
+            continue;
         end
 
         % combine similar polygons (that are stacked directly above one another)
@@ -700,7 +703,7 @@ for file_idx = 1:num_files
     polygons = interactive(img, polygons);
     interactive_end = toc(interactive_time);
 
-    file_id = fopen(sprintf('%sinteractive_timing.txt', save_dir), 'w');
+    file_id = fopen(sprintf('%sinteractive_timing.txt', save_dir), 'a');
     % 'Date,Drive,Frame,Run,Interactive_time,Num_velo_points,Polygons'
     fmt = '%s,%s,%d,%f\n';
     fprintf(file_id, fmt, f_date, f_drive, frame, interactive_end);
