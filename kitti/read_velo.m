@@ -23,7 +23,7 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
     disp("Failed to read Velodyne data.");
     return;
   end
-  % velo = velo(1:10:end,:); % remove every 5th point for display speed
+  velo = velo(1:4:end,:); % remove every 5th point for display speed
   fclose(fid);
 
   % remove all points behind image plane (approximation

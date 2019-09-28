@@ -12,18 +12,18 @@ global img;
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/10_03_drive_27/5_sampling/2_b/";
-gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
+save_dir = "full_run/drive_27/4_sampling/interactive/";
+gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -38,7 +38,7 @@ frame = 25; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
-odo_sequence = 0; % ground-truth odometry poses for this sequence
+odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
 % 00: 2011_10_03_drive_0027 000000 004540 % residential
@@ -59,9 +59,9 @@ gt_files = dir(gt_dir);
 num_gt_files = size(files, 1);
 num_files = size(files, 1) - 2;
 
-file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
-fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
-fclose(file_id);
+% file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
+% fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
+% fclose(file_id);
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir, 'calib_cam_to_cam.txt'));
@@ -529,15 +529,15 @@ for file_idx = 1:num_gt_files-1
         % no polygons found
         % :( :( :(
         if isempty(polygons)
-            t_elapsed = toc(t_start);
-            file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
-            f_date = base_dir(end - 25:end - 16);
-            f_drive = base_dir(end - 8:end - 5);
-            % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
-            fmt = '%s,%s,%d,%d,%f,%d,%d\n';
-            fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
-            fclose(file_id);
-            disp('No objects detected.');
+            % t_elapsed = toc(t_start);
+            % file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
+            % f_date = base_dir(end - 25:end - 16);
+            % f_drive = base_dir(end - 8:end - 5);
+            % % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
+            % fmt = '%s,%s,%d,%d,%f,%d,%d\n';
+            % fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
+            % fclose(file_id);
+            % disp('No objects detected.');
             continue;
         end
 
