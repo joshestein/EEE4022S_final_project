@@ -60,7 +60,7 @@ num_gt_files = size(files, 1);
 num_files = size(files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', save_dir), 'w');
-fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons');
+fprintf(file_id, 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons\n');
 fclose(file_id);
 
 % load calibration
