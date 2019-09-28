@@ -705,8 +705,8 @@ for file_idx = 1:5:num_files - 1
 
     file_id = fopen(sprintf('%sinteractive_timing.txt', save_dir), 'a');
     % 'Date,Drive,Frame,Run,Interactive_time,Num_velo_points,Polygons'
-    fmt = '%s,%s,%d,%f\n';
-    fprintf(file_id, fmt, f_date, f_drive, frame, interactive_end);
+    fmt = '%s,%s,%d,%d,%f\n';
+    fprintf(file_id, fmt, f_date, f_drive, frame, size(polygons,1),interactive_end);
     fclose(file_id);
 
     plot(polygons);
