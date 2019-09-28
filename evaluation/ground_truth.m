@@ -24,12 +24,19 @@ base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/r
 % no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/no_merge/";
 % interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/interactive/";
 
+% 4_sampling
+frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/4_sampling/1_f_1_b/";
+frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/4_sampling/2_b/";
+segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/4_sampling/no_integration/";
+no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/4_sampling/no_merge/";
+interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/4_sampling/interactive/";
+
 % 5_sampling
-frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/1_f_1_b/";
-frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/2_b/";
-segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_integration/";
-no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_merge/";
-interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/interactive/";
+% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/1_f_1_b/";
+% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/2_b/";
+% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_integration/";
+% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_merge/";
+% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/interactive/";
 
 
 % % % % % % % % % % % % %% % % % % % % % % % % % % % % % %
