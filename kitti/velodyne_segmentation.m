@@ -14,15 +14,15 @@ global img;
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_42/no_integration/";
+save_dir = "full_run/10_03_drive_27/5_sampling/2_b/";
 gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
@@ -38,7 +38,7 @@ frame = 25; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1; % incremented when reading velo data, in case frames extend pass file poundaries.
-odo_sequence = 1; % ground-truth odometry poses for this sequence
+odo_sequence = 0; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
 % 00: 2011_10_03_drive_0027 000000 004540 % residential
@@ -72,10 +72,10 @@ if isempty(odo_calib)
     disp('Failed to read odometry data');
 end
 
-% for file_idx = 1:num_gt_files
-%     frame = gt_files(file_idx).name;
-for file_idx = 1:5:num_files - 1
-    frame = files(file_idx).name;
+for file_idx = 1:num_gt_files-1
+    frame = gt_files(file_idx).name;
+% for file_idx = 1:5:num_files - 1
+%     frame = files(file_idx).name;
     if (strcmp(frame, '.') || (strcmp(frame,'..')))
         continue;
     else
