@@ -4,11 +4,35 @@ function jaccards = ground_truth()
 % ros - 'Validation'
 gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
 base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/RGB/";
-frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/no_merge/";
-frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/no_merge/";
-segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_integration/";
-no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/";
-interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/interactive/";
+% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/no_merge/";
+% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/no_merge/";
+% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_integration/";
+% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/";
+% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/interactive/";
+
+% 2_sampling
+% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/1_f_1_b/";
+% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/2_b/";
+% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/no_integration/";
+% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/no_merge/";
+% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/interactive/";
+
+% 3_sampling
+% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/1_f_1_b/";
+% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/2_b/";
+% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/no_integration/";
+% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/no_merge/";
+% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/3_sampling/interactive/";
+
+% 5_sampling
+frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/1_f_1_b/";
+frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/2_b/";
+segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_integration/";
+no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/no_merge/";
+interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/5_sampling/interactive/";
+
+
+% % % % % % % % % % % % %% % % % % % % % % % % % % % % % %
 
 % 2011_10_03_drive_27
 % ros - 'Training'
@@ -20,7 +44,7 @@ interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/
 % no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/";
 % interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/interactive/";
 
-frame = 166;
+
 files = dir(gt_dir);
 num_files = size(files);
 
@@ -42,11 +66,15 @@ for i = 1:num_files
     img = imread(sprintf('%s%06d.png', base_dir, frame));
 
     % read segmentation masks from disk
-    frame_1_mask = load(sprintf('%s%d_mask.mat', frame_integration_1, frame));
-    frame_2_mask = load(sprintf('%s%d_mask.mat', frame_integration_2, frame));
-    no_integration_mask = load(sprintf('%s%d_mask.mat', segmentation_dir, frame));
-    no_merge_mask = load(sprintf('%s%d_mask.mat', no_merge_dir, frame));
-    interactive_mask = load(sprintf('%s%d_interactive_mask.mat', interactive_dir, frame));
+    try
+        frame_1_mask = load(sprintf('%s%d_mask.mat', frame_integration_1, frame));
+        frame_2_mask = load(sprintf('%s%d_mask.mat', frame_integration_2, frame));
+        no_integration_mask = load(sprintf('%s%d_mask.mat', segmentation_dir, frame));
+        no_merge_mask = load(sprintf('%s%d_mask.mat', no_merge_dir, frame));
+        interactive_mask = load(sprintf('%s%d_interactive_mask.mat', interactive_dir, frame));
+    catch
+        continue;
+    end
 
     % convert masks to logical arrays
     frame_1_mask = logical(frame_1_mask.mask);
