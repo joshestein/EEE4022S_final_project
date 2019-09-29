@@ -22,7 +22,7 @@ function varargout = interactive(varargin)
 
 % Edit the above text to modify the response to help interactive
 
-% Last Modified by GUIDE v2.5 25-Sep-2019 08:53:45
+% Last Modified by GUIDE v2.5 29-Sep-2019 14:52:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -108,12 +108,11 @@ global polygons;
 while (ishghandle(hObject) && strcmp(get(hObject, 'State'), 'on'))
     % get x,y cooridnates
     [x, y, button] = ginput(1);
-    if ((button == 100)) % 'd' key
-        set(handles.select, 'State', 'off')
-        select_OnCallback(handles.select, eventdata, handles)
-        break;
-    elseif(isempty(button)) % 'return' key
+    if(isempty(button) || (button == 27)) % 'return' or 'esc' key
         close(gcf);
+        break;
+    elseif(button == 97) % 'a' button
+        set(handles.add_poly, 'State', 'on')
         break;
     end
 
@@ -180,4 +179,48 @@ if (eventdata.Key == 'return')
     delete(hObject);
 elseif (eventdata.Key == 'c')
     set(handles.select, 'State', 'on')
+elseif (eventdata.Key == 'a')
+    set(handles.add_poly, 'State', 'on');
 end
+
+
+% --------------------------------------------------------------------
+function add_poly_OffCallback(hObject, eventdata, handles)
+% hObject    handle to add_poly (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(gcf,'pointer','arrow');
+
+
+% --------------------------------------------------------------------
+function add_poly_OnCallback(hObject, eventdata, handles)
+% hObject    handle to add_poly (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% turn off delete polygon
+set(handles.select, 'State', 'off')
+select_OnCallback(handles.select, eventdata, handles)
+
+global polygons;
+
+polygons = handles.polys;
+
+try
+    new_poly = impoly(gca);
+    poly_points = new_poly.getPosition();
+    new_poly = polyshape(poly_points(:,1), poly_points(:,2));
+
+    % update polygons
+    polygons(size(polygons, 1) + 1 ) = new_poly;
+
+    handles.polys = polygons;
+    guidata(hObject, handles);
+catch
+    % user stopped creating impoly
+    % do nothing
+end
+
+set(handles.add_poly, 'State', 'off');
+set(handles.select, 'State', 'on')
+select_OnCallback(handles.select, eventdata, handles)
