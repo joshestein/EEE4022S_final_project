@@ -76,6 +76,12 @@ for file_idx = 1:num_gt_files-1
     frame = gt_files(file_idx).name;
 % for file_idx = 1:5:num_files - 1
 %     frame = files(file_idx).name;
+
+    % close all figures (even invisible ones)
+    close all;
+    delete(findall(0));
+
+    % skip current and prev directories
     if (strcmp(frame, '.') || (strcmp(frame,'..')))
         continue;
     else
