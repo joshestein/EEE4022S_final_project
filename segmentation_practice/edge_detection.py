@@ -14,13 +14,17 @@ out_h = ndimage.convolve(gray_img, sobel_horizontal, mode="reflect")
 out_v = ndimage.convolve(gray_img, sobel_vertical, mode="reflect")
 out_l = ndimage.convolve(gray_img, laplace, mode="reflect")
 
-fig, axs = plt.subplots(1, 3)
-axs[0].imshow(out_h, cmap='gray')
-axs[0].set_title("Horizontal")
+fig, axs = plt.subplots(1, 4)
 
-axs[1].imshow(out_v, cmap='gray')
-axs[1].set_title("Vertical")
+axs[0].imshow(gray_img, cmap='gray')
+axs[0].set_title("Original image")
 
-axs[2].imshow(out_l, cmap='gray')
-axs[2].set_title("Laplace")
+axs[1].imshow(out_h, cmap='gray')
+axs[1].set_title("Horizontal")
+
+axs[2].imshow(out_v, cmap='gray')
+axs[2].set_title("Vertical")
+
+axs[3].imshow(out_l, cmap='gray')
+axs[3].set_title("Laplace")
 plt.show()
