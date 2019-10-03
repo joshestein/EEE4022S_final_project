@@ -51,6 +51,10 @@ bb_files = dir(bb_dir);
 % subtract '.' and '..'
 num_files = size(num_files, 1) - 2;
 
+file_id = fopen(sprintf('%stiming.txt', bb_dir), 'w');
+fprintf(file_id, 'Time,Polygons\n');
+% fclose(file_id);
+
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
 Tr_velo_to_cam = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'));
@@ -85,6 +89,8 @@ for file = 1:size(bb_files, 1)
 
   multi_velo_img = base_velo_img;
   multi_velo = base_velo;
+
+  t_start = tic;
 
   % get velo points from multiple frames
   for f = frame-backward_frames:frame+forward_frames
@@ -181,6 +187,9 @@ for file = 1:size(bb_files, 1)
     polygons = [polygons; pgon];
 
   end
+
+  t_end = toc(t_start);
+  fprintf(file_id, '%f, %d\n', t_end, size(polygons, 1));
   plot(polygons)
   saveas(fig, sprintf('%s%d.png', bb_dir, frame))
 
@@ -191,6 +200,8 @@ for file = 1:size(bb_files, 1)
   end
   save(sprintf("%s%d_mask.mat", bb_dir, frame), 'mask');
 end
+
+fclose(file_id);
 
 return;
 
