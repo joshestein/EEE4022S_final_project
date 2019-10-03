@@ -183,6 +183,13 @@ for file = 1:size(bb_files, 1)
   end
   plot(polygons)
   saveas(fig, sprintf('%s%d.png', bb_dir, frame))
+
+  mask = zeros(size(img, 1), size(img,2));
+  for i = 1:size(polygons)
+    curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
+    mask = mask + curr_poly_mask;
+  end
+  save(sprintf("%s%d_mask.mat", bb_dir, frame), 'mask');
 end
 
 return;
