@@ -167,7 +167,9 @@ for file = 1:size(bb_files, 1)
   fprintf(file_id, '%f, %d\n', t_end, size(polygons, 1));
 
   plot(polygons)
-  saveas(fig, sprintf('%s%d.png', bb_dir, frame))
+
+  F = getframe(gca);
+  imwrite(F.cdata, sprintf('%s%d.png', bb_dir, frame));
 
  mask = zeros(size(img, 1), size(img,2));
  for i = 1:size(polygons)
