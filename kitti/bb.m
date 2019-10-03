@@ -27,7 +27,7 @@ odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/datase
 addpath(sdk_dir);
 
 cam       = 2; % 0-based index
-frame     = 200; % 0-based index
+frame     = 71; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1;   % incremented when reading velo data, in case frames extend pass file poundaries.
@@ -124,23 +124,16 @@ for file = 1:size(bb_files, 1)
   % col_idx = round(64*min(multi_velo_img(:,3))./multi_velo_img(:,3));
 
   % rgb_matrix = zeros(size(multi_velo_img, 1), 3);
-  % % ab_matrix = zeros(size(multi_velo_img, 1), 2);
   % rows = round(multi_velo_img(:,2));
   % cols = round(multi_velo_img(:,1));
   % % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
   % 
   % for i=1:size(multi_velo_img,1)
-  %   % colours = cols = 64 x 3
-  %   % 5 main colours (more and it breaks?)
-  %   % min(velo(:,1)) == 5
-  %   % if (multi_velo_img(i ,3) > 26)
   %   try
   %     % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   %   catch
   %     continue;
   %   end
-  %   % end
-  %   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   %   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   % end
 
@@ -161,30 +154,35 @@ for file = 1:size(bb_files, 1)
     important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
     important_velo = multi_velo_img(important_idx, :);
 
-    weights = [1; 1; 1000]; 
-    weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
+    % distant points assume TF does better and don't cluster
+    if (mean(important_velo(3,:)) < 200)
+      pgon = polyshape([x_min, x_max, x_max, x_min], [y_min, y_min, y_max, y_max]);
+    else
+      weights = [1; 1; 1000]; 
+      weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
 
-    Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
-    Z = linkage(Y);
-    T = cluster(Z, 'maxclust', 5);
+      Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
+      Z = linkage(Y);
+      T = cluster(Z, 'maxclust', 5);
 
-    % find cluster with max points
-    max_points = 0;
-    max_idx = 1;
-    for i = 1:5
-      clust_id = T == i;
-      if (nnz(clust_id) > max_points)
-        max_points = nnz(clust_id);
-        max_idx = i;
+      % find cluster with max points
+      max_points = 0;
+      max_idx = 1;
+      for i = 1:5
+        clust_id = T == i;
+        if (nnz(clust_id) > max_points)
+          max_points = nnz(clust_id);
+          max_idx = i;
+        end
       end
+
+      clust_id = T == max_idx;
+      % plot(important_velo(clust_id, 1), important_velo(clust_id, 2), 'x', 'Color', 'r');
+      K = convhull(important_velo(clust_id, 1), important_velo(clust_id, 2));
+      cluster_matrix = [important_velo(clust_id, 1), important_velo(clust_id, 2)];
+
+      pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
     end
-
-    clust_id = T == max_idx;
-    % plot(important_velo(clust_id, 1), important_velo(clust_id, 2), 'x', 'Color', 'r');
-    K = convhull(important_velo(clust_id, 1), important_velo(clust_id, 2));
-    cluster_matrix = [important_velo(clust_id, 1), important_velo(clust_id, 2)];
-
-    pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
     polygons = [polygons; pgon];
 
   end
