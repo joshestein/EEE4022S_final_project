@@ -79,7 +79,6 @@ for file = 1:size(bb_files, 1)
 
   % load and display image
   img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
-  % lab_img = rgb2lab(img);
   fig = figure('Visible', 'off');
   imshow(img); hold on;
   % axis on; grid on;
@@ -155,7 +154,7 @@ for file = 1:size(bb_files, 1)
     important_velo = multi_velo_img(important_idx, :);
 
     % distant points assume TF does better and don't cluster
-    if (mean(important_velo(3,:)) < 200)
+    if (mean(important_velo(:, 3)) > 30)
       pgon = polyshape([x_min, x_max, x_max, x_min], [y_min, y_min, y_max, y_max]);
     else
       weights = [1; 1; 1000]; 
