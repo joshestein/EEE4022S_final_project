@@ -27,7 +27,7 @@ odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/datase
 addpath(sdk_dir);
 
 cam       = 2; % 0-based index
-frame     = 50; % 0-based index
+frame     = 200; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1;   % incremented when reading velo data, in case frames extend pass file poundaries.
@@ -53,7 +53,6 @@ num_files = size(num_files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', bb_dir), 'w');
 fprintf(file_id, 'Time,Polygons\n');
-% fclose(file_id);
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -167,21 +166,23 @@ for file = 1:size(bb_files, 1)
 
     Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
     Z = linkage(Y);
-    T = cluster(Z, 'maxclust', 2);
+    T = cluster(Z, 'maxclust', 5);
 
-    clust_1_id = T == 1;
-    clust_2_id = T == 2;
-
-    % plot(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2), 'x', 'Color', 'r');
-    % plot(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2), 'x', 'Color', 'b');
-
-    if (nnz(clust_1_id) > nnz(clust_2_id))
-      K = convhull(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2));
-      cluster_matrix = [important_velo(clust_1_id, 1), important_velo(clust_1_id, 2)];
-    else
-      K = convhull(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2));
-      cluster_matrix = [important_velo(clust_2_id, 1), important_velo(clust_2_id, 2)];
+    % find cluster with max points
+    max_points = 0;
+    max_idx = 1;
+    for i = 1:5
+      clust_id = T == i;
+      if (nnz(clust_id) > max_points)
+        max_points = nnz(clust_id);
+        max_idx = i;
+      end
     end
+
+    clust_id = T == max_idx;
+    % plot(important_velo(clust_id, 1), important_velo(clust_id, 2), 'x', 'Color', 'r');
+    K = convhull(important_velo(clust_id, 1), important_velo(clust_id, 2));
+    cluster_matrix = [important_velo(clust_id, 1), important_velo(clust_id, 2)];
 
     pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
     polygons = [polygons; pgon];
