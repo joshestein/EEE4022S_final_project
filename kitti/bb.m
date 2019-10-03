@@ -20,7 +20,7 @@ calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
 save_dir = "full_run/drive_27/no_merge/";
-bb_dir = "full_run/drive_27/bb/";
+bb_dir = "full_run/drive_27/pure_tensorflow/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -53,7 +53,6 @@ num_files = size(num_files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', bb_dir), 'w');
 fprintf(file_id, 'Time,Polygons\n');
-% fclose(file_id);
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -159,46 +158,23 @@ for file = 1:size(bb_files, 1)
     y_max = bb_rect(rect_id, 3) * rows;
     x_max = bb_rect(rect_id, 4) * cols;
 
-    important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
-    important_velo = multi_velo_img(important_idx, :);
-
-    weights = [1; 1; 1000]; 
-    weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
-
-    Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
-    Z = linkage(Y);
-    T = cluster(Z, 'maxclust', 2);
-
-    clust_1_id = T == 1;
-    clust_2_id = T == 2;
-
-    % plot(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2), 'x', 'Color', 'r');
-    % plot(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2), 'x', 'Color', 'b');
-
-    if (nnz(clust_1_id) > nnz(clust_2_id))
-      K = convhull(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2));
-      cluster_matrix = [important_velo(clust_1_id, 1), important_velo(clust_1_id, 2)];
-    else
-      K = convhull(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2));
-      cluster_matrix = [important_velo(clust_2_id, 1), important_velo(clust_2_id, 2)];
-    end
-
-    pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
+    pgon = polyshape([x_min, x_max, x_max, x_min], [y_min, y_min, y_max, y_max]);
     polygons = [polygons; pgon];
 
   end
 
   t_end = toc(t_start);
   fprintf(file_id, '%f, %d\n', t_end, size(polygons, 1));
+
   plot(polygons)
   saveas(fig, sprintf('%s%d.png', bb_dir, frame))
 
-  mask = zeros(size(img, 1), size(img,2));
-  for i = 1:size(polygons)
-    curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
-    mask = mask + curr_poly_mask;
-  end
-  save(sprintf("%s%d_mask.mat", bb_dir, frame), 'mask');
+ mask = zeros(size(img, 1), size(img,2));
+ for i = 1:size(polygons)
+   curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
+   mask = mask + curr_poly_mask;
+ end
+ save(sprintf("%s%d_mask.mat", bb_dir, frame), 'mask');
 end
 
 fclose(file_id);
