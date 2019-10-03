@@ -47,6 +47,7 @@ odo_sequence = 7; % ground-truth odometry poses for this sequence
 % 10: 2011_09_30_drive_0034 000000 001200
 
 num_files = dir(sprintf('%s/image_%02d/data/', base_dir, cam));
+bb_files = dir(bb_dir);
 % subtract '.' and '..'
 num_files = size(num_files, 1) - 2;
 
@@ -64,115 +65,125 @@ R_cam_to_rect(1:3,1:3) = calib.R_rect{1};
 % P3 (left colour cam) * cam->cam calibration * velo->cam calibration
 P_velo_to_img = calib.P_rect{cam+1}*R_cam_to_rect*Tr_velo_to_cam;
 
-% load and display image
-img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
-% lab_img = rgb2lab(img);
-figure;
-imshow(img); hold on;
-% axis on; grid on;
-
-[base_velo, base_velo_img] = read_velo(frame, P_velo_to_img);
-
-multi_velo_img = base_velo_img;
-multi_velo = base_velo;
-
-
-% get velo points from multiple frames
-for f = frame-backward_frames:frame+forward_frames
-  if (f < 1)
+for file = 1:size(bb_files, 1)
+  close all;
+  frame = bb_files(file).name;
+  if (strcmp(frame, '.') || strcmp(frame, '..'))
     continue;
   end
+  frame = str2double(frame(1:end-4));
+  disp(frame)
 
-  if (f > num_files - 1)
-    break;
+  % load and display image
+  img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
+  % lab_img = rgb2lab(img);
+  fig = figure('Visible', 'off');
+  imshow(img); hold on;
+  % axis on; grid on;
+
+  [base_velo, base_velo_img] = bb_read_velo(frame, P_velo_to_img);
+
+  multi_velo_img = base_velo_img;
+  multi_velo = base_velo;
+
+  % get velo points from multiple frames
+  for f = frame-backward_frames:frame+forward_frames
+    if (f < 1)
+      continue;
+    end
+
+    if (f > num_files - 1)
+      break;
+    end
+
+    if (f == frame)
+      continue;
+    end
+
+    % determine transform from forward/backward frames to base frame
+    odo_diff = odo_calib{frame+1}\odo_calib{f+1};
+
+    % build transform matrix
+    P_velo_to_img = calib.P_rect{cam + 1} * R_cam_to_rect * odo_diff * Tr_velo_to_cam;
+
+    % load velodyne points
+    [velo, velo_img] = bb_read_velo(f, P_velo_to_img);
+
+    multi_velo_img = [multi_velo_img; velo_img];
+    multi_velo = [multi_velo; velo];
+    
+    num_frames = num_frames + 1;
   end
 
-  if (f == frame)
-    continue;
+  % colours = jet;
+  % col_idx = round(64*min(multi_velo_img(:,3))./multi_velo_img(:,3));
+
+  % rgb_matrix = zeros(size(multi_velo_img, 1), 3);
+  % % ab_matrix = zeros(size(multi_velo_img, 1), 2);
+  % rows = round(multi_velo_img(:,2));
+  % cols = round(multi_velo_img(:,1));
+  % % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
+  % 
+  % for i=1:size(multi_velo_img,1)
+  %   % colours = cols = 64 x 3
+  %   % 5 main colours (more and it breaks?)
+  %   % min(velo(:,1)) == 5
+  %   % if (multi_velo_img(i ,3) > 26)
+  %   try
+  %     % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+  %   catch
+  %     continue;
+  %   end
+  %   % end
+  %   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
+  %   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
+  % end
+
+  polygons = [];
+  [rows, cols, channels] = size(img);
+  bb_rect = load(sprintf('%s%d.mat', bb_dir, frame));
+  bb_rect = bb_rect.bb;
+
+  for rect_id = 1:size(bb_rect, 1)
+    if (all(bb_rect(rect_id)) == 0)
+      continue;
+    end
+    y_min = bb_rect(rect_id, 1) * rows;
+    x_min = bb_rect(rect_id, 2) * cols;
+    y_max = bb_rect(rect_id, 3) * rows;
+    x_max = bb_rect(rect_id, 4) * cols;
+
+    important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
+    important_velo = multi_velo_img(important_idx, :);
+
+    weights = [1; 1; 1000]; 
+    weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
+
+    Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
+    Z = linkage(Y);
+    T = cluster(Z, 'maxclust', 2);
+
+    clust_1_id = T == 1;
+    clust_2_id = T == 2;
+
+    % plot(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2), 'x', 'Color', 'r');
+    % plot(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2), 'x', 'Color', 'b');
+
+    if (nnz(clust_1_id) > nnz(clust_2_id))
+      K = convhull(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2));
+      cluster_matrix = [important_velo(clust_1_id, 1), important_velo(clust_1_id, 2)];
+    else
+      K = convhull(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2));
+      cluster_matrix = [important_velo(clust_2_id, 1), important_velo(clust_2_id, 2)];
+    end
+
+    pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
+    polygons = [polygons; pgon];
+
   end
-
-  % determine transform from forward/backward frames to base frame
-  odo_diff = odo_calib{frame+1}\odo_calib{f+1};
-
-  % build transform matrix
-  P_velo_to_img = calib.P_rect{cam + 1} * R_cam_to_rect * odo_diff * Tr_velo_to_cam;
-
-  % load velodyne points
-  [velo, velo_img] = read_velo(f, P_velo_to_img);
-
-  multi_velo_img = [multi_velo_img; velo_img];
-  multi_velo = [multi_velo; velo];
-  
-  num_frames = num_frames + 1;
+  plot(polygons)
+  saveas(fig, sprintf('%s%d.png', bb_dir, frame))
 end
-
-% colours = jet;
-% col_idx = round(64*min(multi_velo_img(:,3))./multi_velo_img(:,3));
-
-% rgb_matrix = zeros(size(multi_velo_img, 1), 3);
-% % ab_matrix = zeros(size(multi_velo_img, 1), 2);
-% rows = round(multi_velo_img(:,2));
-% cols = round(multi_velo_img(:,1));
-% % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
-% 
-% for i=1:size(multi_velo_img,1)
-%   % colours = cols = 64 x 3
-%   % 5 main colours (more and it breaks?)
-%   % min(velo(:,1)) == 5
-%   % if (multi_velo_img(i ,3) > 26)
-%   try
-%     % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
-%   catch
-%     continue;
-%   end
-%   % end
-%   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
-%   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
-% end
-
-polygons = [];
-[rows, cols, channels] = size(img);
-bb_rect = load(sprintf('%s%d.mat', bb_dir, frame));
-bb_rect = bb_rect.bb;
-
-for rect_id = 1:size(bb_rect, 1)
-  if (all(bb_rect(rect_id)) == 0)
-    continue;
-  end
-  y_min = bb_rect(rect_id, 1) * rows;
-  x_min = bb_rect(rect_id, 2) * cols;
-  y_max = bb_rect(rect_id, 3) * rows;
-  x_max = bb_rect(rect_id, 4) * cols;
-
-  important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
-  important_velo = multi_velo_img(important_idx, :);
-
-  weights = [1; 1; 1000]; 
-  weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
-
-  Y = pdist(double(important_velo), @(XI, XJ) weighted_euc(XI, XJ, weights));
-  Z = linkage(Y);
-  T = cluster(Z, 'maxclust', 2);
-
-  clust_1_id = T == 1;
-  clust_2_id = T == 2;
-
-  % plot(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2), 'x', 'Color', 'r');
-  % plot(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2), 'x', 'Color', 'b');
-
-  if (nnz(clust_1_id) > nnz(clust_2_id))
-    K = convhull(important_velo(clust_1_id, 1), important_velo(clust_1_id, 2));
-    cluster_matrix = [important_velo(clust_1_id, 1), important_velo(clust_1_id, 2)];
-  else
-    K = convhull(important_velo(clust_2_id, 1), important_velo(clust_2_id, 2));
-    cluster_matrix = [important_velo(clust_2_id, 1), important_velo(clust_2_id, 2)];
-  end
-
-  pgon = polyshape(cluster_matrix(K, 1), cluster_matrix(K,2));
-  polygons = [polygons; pgon];
-
-end
-plot(polygons)
 
 return;
 
