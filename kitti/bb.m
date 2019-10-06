@@ -9,18 +9,18 @@ global img;
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync'; % road
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync'; % road
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_27/no_merge/";
-bb_dir = "full_run/10_03_drive_27/bb/";
+save_dir = "full_run/drive_27/bb/";
+bb_dir = "full_run/drive_27/bb/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -52,7 +52,7 @@ bb_files = dir(bb_dir);
 num_files = size(num_files, 1) - 2;
 
 file_id = fopen(sprintf('%stiming.txt', bb_dir), 'w');
-fprintf(file_id, 'Time,Polygons\n');
+fprintf(file_id, 'Avg_velo_points,Time,Polygons\n');
 
 % load calibration
 calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -140,6 +140,8 @@ for file = 1:size(bb_files, 1)
   [rows, cols, channels] = size(img);
   bb_rect = load(sprintf('%s%d.mat', bb_dir, frame));
   bb_rect = bb_rect.bb;
+  avg_velo_points = 0;
+  rect_count = 0;
 
   for rect_id = 1:size(bb_rect, 1)
     if (all(bb_rect(rect_id)) == 0)
@@ -152,6 +154,9 @@ for file = 1:size(bb_files, 1)
 
     important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
     important_velo = multi_velo_img(important_idx, :);
+    size(important_velo)
+    avg_velo_points = avg_velo_points + size(important_velo, 1);
+    rect_count = rect_count + 1;
 
     % distant points assume TF does better and don't cluster
     if (mean(important_velo(:, 3)) > 30)
@@ -187,7 +192,7 @@ for file = 1:size(bb_files, 1)
   end
 
   t_end = toc(t_start);
-  fprintf(file_id, '%f, %d\n', t_end, size(polygons, 1));
+  fprintf(file_id, '%f, %f, %d\n', avg_velo_points/rect_count, t_end, size(polygons, 1));
   plot(polygons)
 
   F = getframe(gca);
