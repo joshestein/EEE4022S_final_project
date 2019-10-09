@@ -7,24 +7,24 @@
 global base_dir;
 global img;
 
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync'; % road
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_27/no_merge/";
+% save_dir = "full_run/drive_27/no_merge/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -35,12 +35,11 @@ cam       = 2; % 0-based index
 % frame = 329 for drive 09
 % frame = 42 for drive 13
 % frame = 397 for drive 27
-frame     = 163; % 0-based index
+frame     = 329; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
 num_frames = 1;   % incremented when reading velo data, in case frames extend pass file poundaries.
-% odo_sequence = 7; % ground-truth odometry poses for this sequence
-odo_sequence = 1; % ground-truth odometry poses for this sequence
+odo_sequence = 7; % ground-truth odometry poses for this sequence
 
 % Odometry sequences:
 % 00: 2011_10_03_drive_0027 000000 004540
@@ -142,14 +141,14 @@ for i=1:size(multi_velo_img,1)
   % 5 main colours (more and it breaks?)
   % min(velo(:,1)) == 5
   % if (multi_velo_img(i ,3) > 26)
-    % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+   % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % end
   % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   % ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
 end
 
-bg_col_idx = round(64*5./bg_velo(:,1));
+% bg_col_idx = round(64*min(bg_velo(:,3))./bg_velo(:,3));
 % for i = 1:size(bg_velo_img, 1)
 %   plot(bg_velo_img(i, 1), bg_velo_img(i, 2), 'x', 'LineWidth', 4, 'MarkerSize', 1, 'Color', colours(bg_col_idx(i),:));
 % end
@@ -395,7 +394,7 @@ for i = 1:num_clusters
 
       for j = 1:bg_idx
         bg_clust_idx = (bg_cluster_points(:,1) == j);
-        if (nnz(bg_clust_idx) < 15)
+        if (nnz(bg_clust_idx) < 50)
           continue;
         end
 
@@ -411,14 +410,14 @@ for i = 1:num_clusters
           % TODO: add fg points to bg points
           % col = rand(1,3);
           found_bg_clust = true;
-          % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-          % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+          % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', clust_col);
+          % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', clust_col);
           break;
         end
       end
 
       if (found_bg_clust)
-      % continue;
+        continue;
       end
     end
 
@@ -503,7 +502,6 @@ while (i < m)
   end
   i = i + 1;
 end
-
 
 % remove lower triangular since symmetric
 poly_intersects = triu(overlaps(polygons));
@@ -611,8 +609,9 @@ for i = 1:size(polygons)
   mask = mask + curr_poly_mask;
 end
 
-save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
+% save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
 
+% % % % % % % % % % % % % % % % % % % % % 
   % for j = 1:numel(cluster_id)
   %   pos = cluster_id(j);
   %   plot(pointcloud_matrix(pos, 1), pointcloud_matrix(pos, 2), 'x', 'color', clust_col);
