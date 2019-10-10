@@ -212,7 +212,7 @@ try
     new_poly = polyshape(poly_points(:,1), poly_points(:,2));
 
     % update polygons
-    polygons(size(polygons, 1) + 1 ) = new_poly;
+    polygons(end + 1 ) = new_poly;
 
     handles.polys = polygons;
     guidata(hObject, handles);
