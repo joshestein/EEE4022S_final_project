@@ -2,25 +2,25 @@
 global base_dir;
 global img;
 
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0034_sync'; % campus
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/2011_09_28_drive_0038_sync'; % campus
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0020_sync';  % residential
-base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
+% base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0027_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive_0034_sync';  % residential
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync'; % road
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-save_dir = "full_run/drive_27/bb/";
-bb_dir = "full_run/drive_27/bb/";
+save_dir = "full_run/drive_09/bb/";
+bb_dir = "full_run/drive_09/bb/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -154,7 +154,6 @@ for file = 1:size(bb_files, 1)
 
     important_idx = (multi_velo_img(:,1) > x_min) & (multi_velo_img(:,1) < x_max) & (multi_velo_img(:,2) > y_min) & (multi_velo_img(:,2) < y_max);
     important_velo = multi_velo_img(important_idx, :);
-    size(important_velo)
     avg_velo_points = avg_velo_points + size(important_velo, 1);
     rect_count = rect_count + 1;
 
@@ -207,67 +206,7 @@ for file = 1:size(bb_files, 1)
 end
 
 fclose(file_id);
-
 return;
-
-% matrix to store variables for clustering based on Euclidean distance
-% format:
-% velo_img_x, velo_img_y, depth, r, g, b
-pointcloud_matrix = [multi_velo_img rgb_matrix];
-
-% this could be made higher, i.e. over-cluster
-% and then merge similar clusters together
-% where similarity is based on depth, colour, position
-num_clusters = 10;
- 
-weights = [1.5; 1.5; 1000; 0; 0; 0]; 
-weighted_euc = @(XI, XJ, W) sqrt(bsxfun(@minus, XI, XJ).^2 * W);
-
-Y = pdist(double(pointcloud_matrix), @(XI, XJ) weighted_euc(XI, XJ, weights));
-Z = linkage(Y);
-T = cluster(Z, 'maxclust', num_clusters);
-
-% store polygons (convex hull shapes)
-% figure(); imshow(img); hold on;
-bg_polygons = [];
-
-% store the points inside each polygon
-% format: cluster_number, y, x, depth, r, g, b
-% cannot remember why I switched x and y
-num_cluster_points = [];
-
-% used to keep track of which cluster points are in which polygon
-poly_idx = 1;
-
-for i = 1:num_clusters
-  found_bg_clust = false;
-  cluster_id = find(T==i);
-  numel(cluster_id);
-% mask = zeros(size(img));
-% cluster_id = find(T==10);
-  clust_col = rand(1,3);
-
-  % store indeces and rgb values of each cluster pos
-  cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 3:6)];
-  % cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
-
-  % plot(cluster_matrix(:,2), cluster_matrix(:,1), 'x', 'color', clust_col);
-
-  if (numel(cluster_id) > 30)
-    % TODO: remove 'cluster_matrix' and just use pointcloud_matrix
-    % K = convhull(cluster_matrix(:,2), cluster_matrix(:,1));
-
-    index = poly_idx.*ones(numel(cluster_id), 1);
-    K = convhull(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2));
-    pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,1));
-    polygons = [polygons; pgon];
-
-    % num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3:6)];
-    num_cluster_points = [num_cluster_points; index, pointcloud_matrix(cluster_id,:)];
-    poly_idx = poly_idx + 1;
-
-  end
-end
 
 % no polygons found
 % :( :( :(
@@ -275,38 +214,6 @@ if isempty(polygons)
   disp('No objects detected.');
   return
 end
-
-% combine similar polygons (that are stacked directly above one another)
-% TODO: perhaps switch to using activecontour? Or finding _all_ similar pixels (i.e. above original bg pixels)
-m = size(polygons, 1);
-i = 1;
-while (i < m)
-  clust_1 = (num_cluster_points(:,1) == i);
-  j = i + 1;
-  while (j < m)
-    % TODO: more than one fusion is breaking this
-    clust_2 = (num_cluster_points(:,1) == j);
-    col_dist = hist_colour_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
-    p_dist = pos_dist(num_cluster_points(clust_1, 2:7), num_cluster_points(clust_2, 2:7));
-    if (col_dist < 0.3 && p_dist < 4e03)
-      % set clust_2 to be part of clust_1
-      num_cluster_points(clust_2, 1) = i;
-      new_clust = (num_cluster_points(:,1) == i);
-      
-      cluster_matrix = num_cluster_points(new_clust, :);
-
-      K = convhull(num_cluster_points(new_clust, 2), num_cluster_points(new_clust, 3));
-      pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K,3));
-
-      polygons(i) = pgon;
-      polygons(j) = [];
-      m = m - 1;
-    end
-    j = j + 1;
-  end
-  i = i + 1;
-end
-
 
 % remove lower triangular since symmetric
 poly_intersects = triu(overlaps(polygons));
@@ -354,68 +261,3 @@ for i = 1:size(polygons)
   curr_poly_mask = poly2mask(polygons(i).Vertices(:,1), polygons(i).Vertices(:,2), size(img,1), size(img, 2));
   mask = mask + curr_poly_mask;
 end
-
-% save(sprintf("%s%d_mask.mat", save_dir, frame), 'mask');
-% gradient_edges(img, velo_img, velo);
-% missing_gaps(img, velo_img_copy, velo_copy);
-%  % colour_difference(img, velo_img, velo);
-%  % threshold_by_depth(img, velo_img, velo);
-
-function colour_dist = hist_colour_dist(bg_clust, fg_clust)
-  % build colour histograms for bg_clust and fg_clust
-  % compute differences btw. histograms
-  % returns overall distance
-  % smaller = more similar
-
-  % get r, g, b
-  bg_r = bg_clust(:, 4);
-  bg_g = bg_clust(:, 5);
-  bg_b = bg_clust(:, 6);
-
-  r = fg_clust(:, 4);
-  g = fg_clust(:, 5);
-  b = fg_clust(:, 6);
-
-  % build histograms
-  bg_r = imhist(bg_r./255, 16);
-  bg_g = imhist(bg_g./255, 16);
-  bg_b = imhist(bg_b./255, 16);
-
-  r = imhist(r./255, 16);
-  g = imhist(g./255, 16);
-  b = imhist(b./255, 16);
-
-  % normalize histograms
-  bg_r = bg_r./numel(bg_clust);
-  bg_g = bg_g./numel(bg_clust);
-  bg_b = bg_b./numel(bg_clust);
-
-  r = r./numel(fg_clust);
-  g = g./numel(fg_clust);
-  b = b./numel(fg_clust);
-
-  % compute histogram differences
-  res_r = sum(abs(bg_r - r));
-  res_g = sum(abs(bg_g - g));
-  res_b = sum(abs(bg_b - b));
-
-  % sum resulting differences
-  colour_dist = res_r + res_g + res_b;
-end
-
-function dist = pos_dist(bg_clust, fg_clust)
-  % computes distance between average x,y of fg and bg clusters
-  bg_x = mean(bg_clust(:,1));
-  bg_y = mean(bg_clust(:,2));
-
-  x = mean(fg_clust(:,1));
-  y = mean(fg_clust(:,2));
-
-  x_dist = abs(x-bg_x); 
-  y_dist = abs(y-bg_y);
-
-  % ignore sqrt for computational efficiency
-  dist = x_dist^2+y_dist^2;
-
-end
-
