@@ -2,14 +2,14 @@ function jaccards = ground_truth()
 
 % 2011_09_30_drive_27
 % ros - 'Validation'
-gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
-base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/RGB/";
-frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/no_merge/";
-frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/no_merge/";
-segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_integration/";
-no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/";
-interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/interactive/";
-full_interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/full_interactive/";
+% gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/GT/";
+% base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Validation_07/RGB/";
+% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/1_f_1_b/no_merge/";
+% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_b/no_merge/";
+% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_integration/";
+% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/";
+% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/no_merge/interactive/";
+% full_interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/full_interactive/";
 
 % 2_sampling
 % frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/drive_27/2_sampling/1_f_1_b/";
@@ -44,13 +44,14 @@ full_interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/driv
 
 % 2011_10_03_drive_27
 % ros - 'Training'
-% gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
-% base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/RGB/";
-% frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/1_f_1_b/no_merge/";
-% frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/2_b/no_merge/";
-% segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_integration/";
-% no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/";
-% interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/interactive/";
+gt_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/GT/";
+base_dir = "/home/josh/Documents/UCT/Thesis/Datasets/ground_truth_segmentation/ros_offline/KITTI_SEMANTIC/Training_00/RGB/";
+frame_integration_1 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/1_f_1_b/no_merge/";
+frame_integration_2 = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/2_b/no_merge/";
+segmentation_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_integration/";
+no_merge_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/";
+interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/no_merge/interactive/";
+full_interactive_dir = "/home/josh/Documents/UCT/Thesis/Code/kitti/full_run/10_03_drive_27/full_interactive/";
 
 
 files = dir(gt_dir);
