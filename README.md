@@ -1,6 +1,6 @@
 # EEE4022S Final year project
 
-The MATLAB can be found in the 'kitti' folder.
+MATLAB code can be found in the 'kitti' folder.
 
 Use the master branch to segment a single image (non-interactively).
 
