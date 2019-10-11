@@ -30,10 +30,6 @@ odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/datase
 addpath(sdk_dir);
 
 cam = 2; % 0-based index
-% frame = 392 for drive 93
-% frame = 329 for drive 09
-% frame = 42 for drive 13
-% frame = 397 for drive 27
 frame = 25; % 0-based index
 forward_frames = 0;
 backward_frames = 0;
@@ -161,15 +157,9 @@ for file_idx = 1:num_gt_files-1
     % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
 
     for i = 1:size(multi_velo_img, 1)
-        % colours = cols = 64 x 3
-        % 5 main colours (more and it breaks?)
-        % min(velo(:,1)) == 5
-        % if (multi_velo_img(i ,3) > 26)
         % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
         % end
-        % mask(round(velo_img(i, 2)), round(velo_img(i, 1))) = 1;
         rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
-        % ab_matrix(i, 1:2) = lab_img(rows(i), cols(i), 2:3);
     end
 
     bg_col_idx = round(64 * 5 ./ bg_velo(:, 1));
@@ -220,47 +210,10 @@ for file_idx = 1:num_gt_files-1
 
     end
 
-    % block_size = 16;
-    % for col = 1:block_size:size(img, 2)
-    %     % col + block_size = 1 + block points
-    %     % so we need to subtract one to ensure we are only searching for exactly block number of points.
-    %     % e.g block size = 16
-    %     % 1:(1+16) = searching 17 points
-    %     % So explicitely subtract 1.
-    %     col_end = col + block_size - 1;
-    %     for row = 1:block_size:size(img, 1)
-    %         row_end = row + block_size - 1;
-    %         num_points = nnz(dist_velo_img(:,1) > col & dist_velo_img(:,1) < col_end  & dist_velo_img(:,2) > row & dist_velo_img(:,2) < row_end);
-    %         if (num_points > 20)
-    %           rectangle('Position', [col row block_size block_size], 'EdgeColor', 'r');
-    %         end
-    %     end
-    % end
-
-    % stores co-ordinates and rgb values of each pixel
-    % used for a rangesearch later to find nearest pixels in image to velodyne points
-    % img_matrix = zeros(size(img, 1)*size(img, 2), 5);
-    % img_matrix_lab = zeros(size(img, 1)*size(img, 2), 4);
-    %
-    % i = 1;
-    % for col = 1:size(img, 2)
-    %   for row = 1:size(img, 1)
-    %     % [row, col, img(row, col, 1:3)]?
-    %     % this is fucking dumb
-    %     % _everything_ needs to be 'double', because uint8 clips at 255
-    %     % I realized this and simply converted row and col
-    %     % but the colours also need to be converted
-    %     img_matrix(i, :) = [double(row), double(col), double(img(row, col, 1)), double(img(row, col, 2)), double(img(row, col, 3))];
-    %     img_matrix_lab(i, :) = [double(row), double(col), double(lab_img(row, col, 1)), double(lab_img(row, col, 2))];
-    %     i = i + 1;
-    %   end
-    % end
-
     % matrix to store variables for clustering based on Euclidean distance
     % format:
     % velo_img_x, velo_img_y, depth, r, g, b
     pointcloud_matrix = [multi_velo_img rgb_matrix];
-    % pointcloud_matrix_lab = [multi_velo_img ab_matrix];
 
     bg_pointcloud_matrix = [bg_velo_img bg_rgb_matrix];
     dist_pointcloud_matrix = [dist_velo_img dist_rgb_matrix];
@@ -382,7 +335,6 @@ for file_idx = 1:num_gt_files-1
 
                     index = bg_idx .* ones(numel(bg_cluster_id), 1);
                     bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id, :)];
-                    % bg_cluster_points = [bg_cluster_points; index, bg_pointcloud_matrix(bg_cluster_id,2), bg_pointcloud_matrix(bg_cluster_id,1), bg_pointcloud_matrix(bg_cluster_id,3:6)];
                     bg_idx = bg_idx + 1;
                 elseif (numel(bg_cluster_id) > 10)% a small area of bg is likely something important, i.e. fg
                     cluster_x_pos = mean(bg_pointcloud_matrix(bg_cluster_id), 1);
@@ -410,38 +362,13 @@ for file_idx = 1:num_gt_files-1
 
         % plot(bg_polygons);
 
-        % remove distant clusters that are similar to background
-        % TODO
-        % for i = 1:dist_num_clusters
-        %   dist_idx = find(dist_T == i);
-        %   for j = 1:size(bg_polygons, 1)
-        %     bg_clust_idx = (bg_cluster_points(:,1) == j);
-        %
-        %     col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), dist_pointcloud_matrix(dist_idx, :));
-        %     if (col_dist < 0.4 )
-        %       found_bg_clust = true;
-        %       break;
-        %     end
-        %   end
-        %
-        %   % if (found_bg_clust)
-        %   %   continue;
-        %   % end
-        %   col = rand(1,3);
-        %   % plot(dist_pointcloud_matrix(dist_idx, 1), dist_pointcloud_matrix(dist_idx, 2), 'x', 'color', col);
-        % end
-
         for i = 1:num_clusters
             found_bg_clust = false;
             cluster_id = find(T == i);
-            numel(cluster_id);
-            % mask = zeros(size(img));
-            % cluster_id = find(T==10);
             clust_col = rand(1, 3);
 
             % store indeces and rgb values of each cluster pos
             cluster_matrix = [pointcloud_matrix(cluster_id, 2), pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 3:6)];
-            % cluster_matrix_lab = [pointcloud_matrix_lab(cluster_id, 2), pointcloud_matrix_lab(cluster_id, 1), pointcloud_matrix_lab(cluster_id, 4:5)];
 
             % plot(cluster_matrix(:,2), cluster_matrix(:,1), 'x', 'color', clust_col);
 
@@ -487,20 +414,8 @@ for file_idx = 1:num_gt_files-1
                 pgon = polyshape(cluster_matrix(K, 2), cluster_matrix(K, 1));
                 polygons = [polygons; pgon];
 
-                % num_cluster_points = [num_cluster_points; index, cluster_matrix(:,2), cluster_matrix(:,1), cluster_matrix(:,3:6)];
                 num_cluster_points = [num_cluster_points; index, pointcloud_matrix(cluster_id, :)];
                 poly_idx = poly_idx + 1;
-                % num_points = numel(cluster_matrix(:,1))
-                % if num_points > point threshold && distance (x,y,z) > something
-                % then point is background and remove from clusters
-                % end
-
-                % roi = poly2mask(cluster_matrix(K,2), cluster_matrix(K, 1), size(img,1), size(img,2));
-                % BW = grabcut(img, L, roi);
-                % figure();
-                % imshow(BW);
-                % plot(pgon);
-                %plot(cluster_matrix(K, 2), cluster_matrix(K, 1), 'r');
             end
 
         end
@@ -517,7 +432,6 @@ for file_idx = 1:num_gt_files-1
                 end
 
                 index = poly_idx .* ones(nnz(cluster_id), 1);
-                % dist_cluster_points(:,1) = poly_idx;
                 num_cluster_points = [num_cluster_points; index dist_cluster_points(cluster_id, 2:7)];
                 K = convhull(dist_cluster_points(cluster_id, 2), dist_cluster_points(cluster_id, 3));
                 % only using this for the indexing
@@ -732,55 +646,6 @@ for file_idx = 1:num_gt_files-1
 
 end
 
-% for j = 1:numel(cluster_id)
-%   pos = cluster_id(j);
-%   plot(pointcloud_matrix(pos, 1), pointcloud_matrix(pos, 2), 'x', 'color', clust_col);
-%   % mask(rows(pos), cols(pos), 1:3) = 1;
-%   % find min x co-ordinate
-% end
-
-% could add neighbouring points to cluster, then decrease distance metric and repeat, until no more points are added (i.e. keep decreasing distance)
-% can also use custom distance here to give greater weighting to colour/near neighbours
-% [Idx, D] = rangesearch(img_matrix, cluster_matrix, 5);
-% [Idx, D] = rangesearch(img_matrix, cluster_matrix, 3);
-
-% for neighbours = 1:numel(Idx)
-%   row = img_matrix(Idx{neighbours}, :);
-%   plot(row(:, 2), row(:, 1), 'x', 'color', clust_col);
-% end
-
-%
-%  maskedRgbImage = bsxfun(@times, img, cast(mask,class(img)));
-%
-%  for i = 1:size(cols)
-%    for j = 1:size(rows)
-%      r = img(i, j, 1);
-%      g = img(i, j, 2);
-%      b = img(i, j, 3);
-%
-%      mask_r = maskedRgbImage(i, j, 1);
-%      mask_g = maskedRgbImage(i, j, 2);
-%      mask_b = maskedRgbImage(i, j, 3);
-%
-%    end
-%  end
-%
-%
-%  fg_mask = (zeros(size(img)));
-%  bg_mask = (zeros(size(img)));
-%
-%  % Active contour not working well
-%  % bw = activecontour(img, mask, 300);
-%  % contour(bw, 'Color', 'm');
-%
-%  % figure();
-%  % imshow(img); hold on; axis on; grid on;
-%
-% gradient_edges(img, velo_img, velo);
-% missing_gaps(img, velo_img_copy, velo_copy);
-%  % colour_difference(img, velo_img, velo);
-%  % threshold_by_depth(img, velo_img, velo);
-
 function colour_dist = hist_colour_dist(bg_clust, fg_clust)
     % build colour histograms for bg_clust and fg_clust
     % compute differences btw. histograms
@@ -836,44 +701,5 @@ function dist = pos_dist(bg_clust, fg_clust)
 
     % ignore sqrt for computational efficiency
     dist = x_dist^2 + y_dist^2;
-
-end
-
-function [success, intra_clusts] = multi_intra_clust(clust)
-    % determines if there are multiple clusters within a single cluster
-    % uses colour as determining factor
-    %
-    % input:
-    % clust - pointcloud_matrix rows (x, y, depth, r, g, b)
-    % ------------------------------------------------
-    % output:
-    % intra_clusts is a cell array - each cell corresponds to an intra cluster
-
-    % things to think about:
-    % could convert to grayscale, use Otsu's thresholding
-    % could try grouping nearest neighbours
-    % could try re-running heirarchical clustering based purely on r,g,b and x,y
-    % could try building histograms and finding distinct valleys
-    % could try segmenting via Lab with a set number of clusters
-
-    % colour_weights = [1; 1; 0; 1; 1; 1];
-    % % convert from RGB to Lab
-    % clust(:,4:6) = rgb2lab(clust(:, 4:6));
-    % Y = pdist(double(clust), @(XI, XJ) weighted_euc(XI, XJ, colour_weights));
-    % Z = linkage(Y);
-    % dendrogram(Z);
-    % T = cluster(Z, 'maxclust', 4);
-
-    r = clust(:, 4);
-    g = clust(:, 5);
-    b = clust(:, 6);
-
-    r = imhist(r ./ 255, 16);
-    g = imhist(g ./ 255, 16);
-    b = imhist(b ./ 255, 16);
-
-    r = r ./ numel(fg_clust);
-    g = g ./ numel(fg_clust);
-    b = b ./ numel(fg_clust);
 
 end
