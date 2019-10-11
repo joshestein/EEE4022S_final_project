@@ -81,7 +81,6 @@ for file = 1:size(bb_files, 1)
   img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
   fig = figure('Visible', 'off');
   imshow(img); hold on;
-  % axis on; grid on;
 
   [base_velo, base_velo_img] = bb_read_velo(frame, P_velo_to_img);
 
@@ -122,18 +121,8 @@ for file = 1:size(bb_files, 1)
   % colours = jet;
   % col_idx = round(64*min(multi_velo_img(:,3))./multi_velo_img(:,3));
 
-  % rgb_matrix = zeros(size(multi_velo_img, 1), 3);
-  % rows = round(multi_velo_img(:,2));
-  % cols = round(multi_velo_img(:,1));
-  % % rgb_matrix(:, 1:3) = img(rows, cols, 1:3);
-  % 
   % for i=1:size(multi_velo_img,1)
-  %   try
   %     % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
-  %   catch
-  %     continue;
-  %   end
-  %   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
   % end
 
   polygons = [];
