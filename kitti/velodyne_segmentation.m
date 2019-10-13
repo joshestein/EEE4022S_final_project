@@ -7,7 +7,7 @@
 global base_dir;
 global img;
 
-% base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
+base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0009_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0013_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0048_sync'; % city
 % base_dir  = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/2011_09_26_drive_0093_sync'; % city
@@ -20,13 +20,12 @@ base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/2011_09_30_drive
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0027_sync'; % road
 % base_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/2011_10_03_drive_0042_sync'; % road
 
-% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
+calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_26/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_28/';
-calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
+% calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_09_30/';
 % calib_dir = '/home/josh/Documents/UCT/Thesis/Datasets/2011_10_03/';
 
-
-save_dir = "full_run/drive_27/no_merge/";
+% save_dir = "full_run/drive_27/no_merge/";
 
 sdk_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_devkit/matlab/';
 odo_dir = '/home/josh/Documents/UCT/Thesis/Datasets/KITTI_odometry_devkit/dataset/poses/';
@@ -77,16 +76,10 @@ img = imread(sprintf('%s/image_%02d/data/%010d.png',base_dir,cam,frame));
 
 bg_velo_img = project(bg_velo(:,1:3),P_velo_to_img);
 
-% remove points from bg_img outside img
-i = 1;
-while (i <= size(bg_velo_img, 1))
-  if outside_image(img, bg_velo_img, i)
-    bg_velo_img(i,:) = [];
-    bg_velo(i, :) = [];
-  else
-    i = i + 1;
-  end
-end
+outside_idx = (round(bg_velo_img(:,1)) > size(img,2) | round(bg_velo_img(:, 1)) <= 0 | round(bg_velo_img(:,2)) > size(img,1) | round(bg_velo_img(:, 2)) <= 0);
+
+bg_velo_img(outside_idx, :) = [];
+bg_velo(outside_idx,:) = [];
 
 multi_velo_img = base_velo_img;
 multi_velo = base_velo;
@@ -130,12 +123,12 @@ cols = round(multi_velo_img(:,1));
 
 for i=1:size(multi_velo_img,1)
   % if (multi_velo_img(i ,3) > 26)
-    % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
+   % plot(multi_velo_img(i,1),multi_velo_img(i,2),'o','LineWidth',4,'MarkerSize',1,'Color',colours(col_idx(i),:));
   % end
   rgb_matrix(i, 1:3) = img(rows(i), cols(i), 1:3);
 end
 
-bg_col_idx = round(64*5./bg_velo(:,1));
+% bg_col_idx = round(64*min(bg_velo(:,3))./bg_velo(:,3));
 % for i = 1:size(bg_velo_img, 1)
 %   plot(bg_velo_img(i, 1), bg_velo_img(i, 2), 'x', 'LineWidth', 4, 'MarkerSize', 1, 'Color', colours(bg_col_idx(i),:));
 % end
@@ -249,7 +242,6 @@ if (forward_frames ~= 0)
 end
 
 % store polygons (convex hull shapes)
-% figure(); imshow(img); hold on;
 polygons = [];
 bg_polygons = [];
 
@@ -317,7 +309,7 @@ for i = 1:num_clusters
 
       for j = 1:bg_idx
         bg_clust_idx = (bg_cluster_points(:,1) == j);
-        if (nnz(bg_clust_idx) < 15)
+        if (nnz(bg_clust_idx) < 50)
           continue;
         end
 
@@ -329,14 +321,14 @@ for i = 1:num_clusters
         if (col_dist < 0.4 && p_dist < 7e04)
           % col = rand(1,3);
           found_bg_clust = true;
-          % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
-          % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', col);
+          % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', clust_col);
+          % plot(pointcloud_matrix(cluster_id, 1), pointcloud_matrix(cluster_id, 2), 'o', 'color', clust_col);
           break;
         end
       end
 
       if (found_bg_clust)
-      % continue;
+        continue;
       end
     end
 
@@ -408,7 +400,6 @@ while (i < m)
   end
   i = i + 1;
 end
-
 
 % remove lower triangular since symmetric
 poly_intersects = triu(overlaps(polygons));
