@@ -100,18 +100,10 @@ for file_idx = 1:num_gt_files-1
     bg_velo_img = project(bg_velo(:, 1:3), P_velo_to_img);
 
     % remove points from bg_img outside img
-    i = 1;
+    outside_idx = (round(bg_velo_img(:,1)) > size(img,2) | round(bg_velo_img(:, 1)) <= 0 | round(bg_velo_img(:,2)) > size(img,1) | round(bg_velo_img(:, 2)) <= 0);
 
-    while (i <= size(bg_velo_img, 1))
-
-        if outside_image(img, bg_velo_img, i)
-            bg_velo_img(i, :) = [];
-            bg_velo(i, :) = [];
-        else
-            i = i + 1;
-        end
-
-    end
+    bg_velo_img(outside_idx, :) = [];
+    bg_velo(outside_idx,:) = [];
 
     multi_velo_img = base_velo_img;
     multi_velo = base_velo;
@@ -388,12 +380,8 @@ for file_idx = 1:num_gt_files-1
                     %    % and all bg_clusters
                     %    % if they're very close, assume current fg_cluster is actually part of background
                     %    col_dist = hist_colour_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                    %    % col_dist = hist_colour_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
                     %    p_dist = pos_dist(bg_cluster_points(bg_clust_idx, 2:7), pointcloud_matrix(cluster_id, :));
-                    %    % p_dist = pos_dist(bg_pointcloud_matrix(bg_clust_idx, :), pointcloud_matrix(cluster_id, :));
                     %    if (col_dist < 0.4 && p_dist < 7e04)
-                    %      % % disp('Similar clusters found');
-                    %      % % TODO: add fg points to bg points
                     %      % % col = rand(1,3);
                     %      found_bg_clust = true;
                     %      % plot(bg_pointcloud_matrix(bg_clust_idx, 1), bg_pointcloud_matrix(bg_clust_idx, 2), 'x', 'color', col);
@@ -448,14 +436,14 @@ for file_idx = 1:num_gt_files-1
         % no polygons found
         % :( :( :(
         if isempty(polygons)
-            % t_elapsed = toc(t_start);
-            % file_id = fopen(sprintf('%stiming.txt', save_dir), 'a');
-            % f_date = base_dir(end - 25:end - 16);
-            % f_drive = base_dir(end - 8:end - 5);
-            % % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
-            % fmt = '%s,%s,%d,%d,%f,%d,%d\n';
-            % fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
-            % fclose(file_id);
+            t_elapsed = toc(t_start);
+            file_id = fopen(sprintf('%sinteractive_timing.txt', save_dir), 'a');
+            f_date = base_dir(end - 25:end - 16);
+            f_drive = base_dir(end - 8:end - 5);
+            % 'Date,Drive,Frame,Run,Time,Num_velo_points,Polygons'
+            fmt = '%s,%s,%d,%d,%f,%d,%d\n';
+            fprintf(file_id, fmt, f_date, f_drive, frame, 1, t_elapsed, size(multi_velo_img, 1), 0);
+            fclose(file_id);
             % disp('No objects detected.');
             continue;
         end

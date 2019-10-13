@@ -27,7 +27,7 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
   fclose(fid);
 
   % remove all points behind image plane (approximation
-  idx = velo(:,1)<5;
+  idx = velo(:,1)<0;
   velo(idx,:) = [];
 
   % remove points far in the distance
@@ -51,15 +51,9 @@ function [velo, velo_img, bg_velo] = read_velo(filename, transform_matrix)
   % project to image plane (exclude luminance)
   velo_img = project(velo(:,1:3), transform_matrix);
 
-  % remove all points outside of image
-  i = 1;
-  while (i <= size(velo_img, 1))
-    if outside_image(img, velo_img, i)
-      velo_img(i,:) = [];
-      velo(i, :) = [];
-    else
-      i = i + 1;
-    end
-  end
+  outside_idx = (round(velo_img(:,1)) > size(img,2) | round(velo_img(:, 1)) <= 0 | round(velo_img(:,2)) > size(img,1) | round(velo_img(:, 2)) <= 0);
+
+  velo_img(outside_idx, :) = [];
+  velo(outside_idx,:) = [];
 
 end
