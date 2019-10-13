@@ -81,16 +81,10 @@ imshow(img); hold on;
 
 bg_velo_img = project(bg_velo(:,1:3),P_velo_to_img);
 
-% remove points from bg_img outside img
-i = 1;
-while (i <= size(bg_velo_img, 1))
-  if outside_image(img, bg_velo_img, i)
-    bg_velo_img(i,:) = [];
-    bg_velo(i, :) = [];
-  else
-    i = i + 1;
-  end
-end
+outside_idx = (round(bg_velo_img(:,1)) > size(img,2) | round(bg_velo_img(:, 1)) <= 0 | round(bg_velo_img(:,2)) > size(img,1) | round(bg_velo_img(:, 2)) <= 0);
+
+bg_velo_img(outside_idx, :) = [];
+bg_velo(outside_idx,:) = [];
 
 multi_velo_img = base_velo_img;
 multi_velo = base_velo;
